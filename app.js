@@ -1,7 +1,6 @@
 let port;
 let demoMode = false;
 let currentPage = 0;
-let lastImportedRawConfig = null;
 let validationIssues = [];
 
 const templates = {
@@ -46,18 +45,34 @@ function syncResolutionFields() {
   config.highResolution = $("resolutionMode").value === "enhanced";
 }
 
-function maxAllowedCC() {
-  return config.highResolution ? 31 : 127;
+function maxAllowedCC(candidate = config) {
+  return candidate.highResolution === true ? 31 : 127;
 }
 
 function validateConfig(candidate) {
   const issues = [];
-  const maxCC = candidate.highResolution ? 31 : 127;
+  const validLayouts = ["standard", "performance"];
+  const validBrightness = ["low", "medium", "high"];
+
+  if (typeof candidate.highResolution !== "boolean") {
+    issues.push({ type: "field", field: "highResolution", message: `highResolution must be true or false. Current value: ${JSON.stringify(candidate.highResolution)}.` });
+  }
+  if (!validLayouts.includes(candidate.screenLayout)) {
+    issues.push({ type: "field", field: "screenLayout", message: `screenLayout must be "standard" or "performance". Current value: ${JSON.stringify(candidate.screenLayout)}.` });
+  }
+  if (!validBrightness.includes(candidate.oledBrightness)) {
+    issues.push({ type: "field", field: "oledBrightness", message: `oledBrightness must be "low", "medium" or "high". Current value: ${JSON.stringify(candidate.oledBrightness)}.` });
+  }
+  if (!validBrightness.includes(candidate.ringBrightness)) {
+    issues.push({ type: "field", field: "ringBrightness", message: `ringBrightness must be "low", "medium" or "high". Current value: ${JSON.stringify(candidate.ringBrightness)}.` });
+  }
 
   if (!candidate.pages || !Array.isArray(candidate.pages) || candidate.pages.length !== 4) {
     issues.push({ type: "structure", message: "Expected exactly 4 pages." });
     return issues;
   }
+
+  const maxCC = maxAllowedCC(candidate);
 
   candidate.pages.forEach((page, pageIndex) => {
     if (!page.cc || !Array.isArray(page.cc) || page.cc.length !== 4) {
@@ -67,35 +82,14 @@ function validateConfig(candidate) {
 
     page.cc.forEach((value, faderIndex) => {
       if (typeof value !== "number" || !Number.isFinite(value)) {
-        issues.push({
-          type: "cc",
-          page: pageIndex,
-          fader: faderIndex,
-          value,
-          message: `Page ${pageIndex + 1} · Fader ${faderIndex + 1}: CC value must be numeric.`
-        });
+        issues.push({ type: "cc", page: pageIndex, fader: faderIndex, value, message: `Page ${pageIndex + 1} · Fader ${faderIndex + 1}: CC value must be numeric.` });
         return;
       }
-
       if (!Number.isInteger(value)) {
-        issues.push({
-          type: "cc",
-          page: pageIndex,
-          fader: faderIndex,
-          value,
-          message: `Page ${pageIndex + 1} · Fader ${faderIndex + 1}: CC value must be an integer.`
-        });
+        issues.push({ type: "cc", page: pageIndex, fader: faderIndex, value, message: `Page ${pageIndex + 1} · Fader ${faderIndex + 1}: CC value must be an integer.` });
       }
-
       if (value < 0 || value > maxCC) {
-        issues.push({
-          type: "cc",
-          page: pageIndex,
-          fader: faderIndex,
-          value,
-          max: maxCC,
-          message: `Page ${pageIndex + 1} · Fader ${faderIndex + 1}: CC value ${value} exceeds maximum allowed value (${maxCC}).`
-        });
+        issues.push({ type: "cc", page: pageIndex, fader: faderIndex, value, max: maxCC, message: `Page ${pageIndex + 1} · Fader ${faderIndex + 1}: CC value ${value} exceeds maximum allowed value (${maxCC}).` });
       }
     });
   });
@@ -124,26 +118,37 @@ function updateValidationHighlights() {
     $(`hint${i}`).textContent = "MIDI CC";
   }
 
-  const currentIssues = validationIssues.filter((issue) => issue.type === "cc" && issue.page === currentPage);
+  $("resolutionSetting").classList.remove("invalid");
+  $("resolutionHint").textContent = "";
+  $("resolutionHint").classList.remove("invalid-text");
 
-  currentIssues.forEach((issue) => {
-    $(`card${issue.fader}`).classList.add("invalid");
-    $(`hint${issue.fader}`).textContent = issue.max !== undefined ? `MAX ${issue.max} EXCEEDED` : "INVALID CC";
-  });
+  validationIssues
+    .filter((issue) => issue.type === "cc" && issue.page === currentPage)
+    .forEach((issue) => {
+      $(`card${issue.fader}`).classList.add("invalid");
+      $(`hint${issue.fader}`).textContent = issue.max !== undefined ? `MAX ${issue.max} EXCEEDED` : "INVALID CC";
+    });
+
+  const resolutionIssue = validationIssues.find((issue) => issue.field === "highResolution");
+  if (resolutionIssue) {
+    $("resolutionSetting").classList.add("invalid");
+    $("resolutionHint").textContent = "Invalid value in imported JSON";
+    $("resolutionHint").classList.add("invalid-text");
+  }
 }
 
 function updateUiFromConfig() {
-  $("screenLayout").value = config.screenLayout;
-  $("resolutionMode").value = config.highResolution ? "enhanced" : "midi1";
-  $("oledBrightness").value = config.oledBrightness;
-  $("ringBrightness").value = config.ringBrightness;
+  $("screenLayout").value = ["standard", "performance"].includes(config.screenLayout) ? config.screenLayout : "standard";
+  $("resolutionMode").value = config.highResolution === true ? "enhanced" : "midi1";
+  $("oledBrightness").value = ["low", "medium", "high"].includes(config.oledBrightness) ? config.oledBrightness : "medium";
+  $("ringBrightness").value = ["low", "medium", "high"].includes(config.ringBrightness) ? config.ringBrightness : "medium";
   $("fwInfo").textContent = `FW ${config.fw || "—"}`;
 
   for (let i = 0; i < 4; i++) {
     const input = $(`cc${i}`);
     input.max = maxAllowedCC();
     input.min = 0;
-    input.value = config.pages[currentPage].cc[i];
+    input.value = config.pages[currentPage]?.cc?.[i] ?? "";
   }
 
   updateValidationHighlights();
@@ -163,11 +168,9 @@ function updateConfigFromUi() {
   setValidationIssues(validateConfig(config));
 }
 
-function normalizedConfigForDevice() {
+function configForDevice() {
   updateConfigFromUi();
-  if (validationIssues.length) {
-    return null;
-  }
+  if (validationIssues.length) return null;
 
   return {
     device: "GARLU_FADER_MINI",
@@ -179,26 +182,42 @@ function normalizedConfigForDevice() {
   };
 }
 
-function autoFixConfig() {
-  const maxCC = maxAllowedCC();
+function sampleConfig() {
+  return {
+    _allowedValues: {
+      screenLayout: ["standard", "performance"],
+      highResolution: [false, true],
+      oledBrightness: ["low", "medium", "high"],
+      ringBrightness: ["low", "medium", "high"],
+      ccRange: "0-127 when highResolution=false; 0-31 when highResolution=true"
+    },
+    device: "GARLU_FADER_MINI",
+    screenLayout: "standard",
+    highResolution: false,
+    oledBrightness: "medium",
+    ringBrightness: "medium",
+    pages: [
+      { cc: [11, 1, 21, 7] },
+      { cc: [22, 23, 24, 25] },
+      { cc: [26, 27, 28, 29] },
+      { cc: [30, 31, 0, 1] }
+    ]
+  };
+}
 
-  for (const page of config.pages) {
-    page.cc = page.cc.map((value) => {
-      const numeric = Number(value);
-      if (!Number.isFinite(numeric)) return 0;
-      return Math.max(0, Math.min(maxCC, Math.round(numeric)));
-    });
-  }
-
-  setValidationIssues([]);
-  updateUiFromConfig();
-  output.textContent = JSON.stringify(config, null, 2);
-  toast("Configuration fixed automatically");
+function downloadJson(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function writeLine(line) {
   const writer = port.writable.getWriter();
-  await writer.write(new TextEncoder().encode(line + "\n"));
+  await writer.write(new TextEncoder().encode(line + "\\n"));
   writer.releaseLock();
 }
 
@@ -209,7 +228,7 @@ async function readLine() {
     const { value, done } = await reader.read();
     if (done) break;
     text += new TextDecoder().decode(value);
-    if (text.includes("\n")) break;
+    if (text.includes("\\n")) break;
   }
   reader.releaseLock();
   return text.trim();
@@ -260,7 +279,7 @@ $("readBtn").onclick = async () => {
 };
 
 $("saveBtn").onclick = async () => {
-  const payload = normalizedConfigForDevice();
+  const payload = configForDevice();
 
   if (!payload) {
     toast("Fix configuration issues first");
@@ -281,8 +300,6 @@ $("saveBtn").onclick = async () => {
   toast("Configuration sent");
 };
 
-$("autoFixBtn").onclick = autoFixConfig;
-
 document.querySelectorAll(".page").forEach((button) => {
   button.onclick = () => {
     updateConfigFromUi();
@@ -297,10 +314,7 @@ document.querySelectorAll(".nav").forEach((button) => {
   button.onclick = () => {
     document.querySelectorAll(".nav").forEach((b) => b.classList.remove("active"));
     button.classList.add("active");
-    document.querySelectorAll(".view").forEach((v) => v.classList.remove("active-view"));
-    const view = button.dataset.view;
-    $(`${view}View`).classList.add("active-view");
-    $("viewTitle").textContent = view === "backup" ? "Import / Export" : view[0].toUpperCase() + view.slice(1);
+    document.getElementById(button.dataset.scroll).scrollIntoView({ behavior: "smooth", block: "start" });
   };
 });
 
@@ -317,25 +331,25 @@ document.querySelectorAll(".template").forEach((button) => {
     config.pages = JSON.parse(JSON.stringify(templates[button.dataset.template].pages));
     setValidationIssues(validateConfig(config));
     updateUiFromConfig();
+    output.textContent = JSON.stringify(config, null, 2);
+    document.getElementById("assignments").scrollIntoView({ behavior: "smooth", block: "start" });
     toast("Template applied");
   };
 });
 
 $("exportBtn").onclick = () => {
-  const payload = normalizedConfigForDevice();
+  const payload = configForDevice();
   if (!payload) {
     toast("Fix configuration issues before export");
     return;
   }
-
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "garlu-config.json";
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadJson("garlu-config.json", payload);
   toast("JSON exported");
+};
+
+$("sampleBtn").onclick = () => {
+  downloadJson("garlu-config-example.json", sampleConfig());
+  toast("Example downloaded");
 };
 
 $("importInput").addEventListener("click", (event) => {
@@ -350,14 +364,12 @@ $("importInput").onchange = async (event) => {
     const parsed = JSON.parse(await file.text());
     if (!parsed.pages || parsed.pages.length !== 4) throw new Error("Invalid pages");
 
-    lastImportedRawConfig = JSON.parse(JSON.stringify(parsed));
-
     config.device = parsed.device || "GARLU_FADER_MINI";
     config.fw = parsed.fw || config.fw || "imported";
-    config.screenLayout = parsed.screenLayout || "standard";
-    config.highResolution = Boolean(parsed.highResolution);
-    config.oledBrightness = parsed.oledBrightness || "medium";
-    config.ringBrightness = parsed.ringBrightness || "medium";
+    config.screenLayout = parsed.screenLayout;
+    config.highResolution = parsed.highResolution;
+    config.oledBrightness = parsed.oledBrightness;
+    config.ringBrightness = parsed.ringBrightness;
     config.pages = JSON.parse(JSON.stringify(parsed.pages));
 
     currentPage = 0;
@@ -368,14 +380,12 @@ $("importInput").onchange = async (event) => {
     setValidationIssues(issues);
     updateUiFromConfig();
     output.textContent = JSON.stringify(config, null, 2);
+    document.getElementById("assignments").scrollIntoView({ behavior: "smooth", block: "start" });
 
-    if (issues.length) {
-      toast("Imported with warnings");
-    } else {
-      toast("JSON imported");
-    }
+    toast(issues.length ? "Imported with warnings" : "JSON imported");
   } catch {
-    alert("Invalid GARLU JSON file.");
+    setValidationIssues([{ type: "structure", message: "Invalid JSON syntax or GARLU structure. Check commas, quotes and boolean values." }]);
+    alert("Invalid JSON. Example: highResolution must be true or false, not fal.");
   } finally {
     event.target.value = "";
   }
