@@ -274,7 +274,11 @@ $("demoBtn").onclick = () => {
   demoMode = true;
   showApp();
   config.fw = "demo";
-  setConnected("Demo mode", true);
+  $("connectionStatus").textContent = "Demo mode";
+  $("statusDot").classList.remove("connected");
+  $("connectBtn").classList.remove("connected");
+  $("connectBtn").textContent = "Connect to GARLU";
+  updateDeviceLabels();
   toast("Demo mode active");
   updateUiFromConfig();
 };

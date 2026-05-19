@@ -37,3 +37,81 @@
   margin-right: 9px;
   vertical-align: 1px;
 }
+
+
+/* v2.10 refinements */
+.side-brand {
+  align-items: center;
+  width: 100%;
+}
+
+.stacked-logo {
+  margin-left: auto;
+  margin-right: auto;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-weight: 700;
+  letter-spacing: .42em;
+  text-align: center;
+  text-shadow: 0 0 18px rgba(185,255,245,.08);
+}
+
+.stacked-logo > div {
+  text-align: center;
+}
+
+.stacked-logo.small {
+  font-size: 30px;
+}
+
+.logo-line-small {
+  letter-spacing: .48em;
+}
+
+.logo-line-mini {
+  letter-spacing: .38em;
+}
+
+.nav {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.setting {
+  margin-bottom: 14px;
+}
+
+.setting small:empty {
+  display: none;
+  min-height: 0;
+}
+
+#resolutionSetting {
+  margin-bottom: 14px;
+}
+
+.fader-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.fader-icon {
+  height: 92px;
+  margin-bottom: 12px;
+}
+
+.fader-icon:before {
+  height: 88px;
+}
+
+.fader-icon span {
+  top: 42px;
+}
+
+.fader-card input {
+  margin-top: auto;
+}
+
+.main-panel .panel-header h3 {
+  letter-spacing: .14em;
+}
