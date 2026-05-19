@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=2.5" />
+  <link rel="stylesheet" href="./style.css?v=2.6" />
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -168,9 +168,9 @@
           </div>
         </div>
         <div class="backup-actions">
-          <button id="exportBtn" class="button ghost">Export JSON</button>
-          <button id="sampleBtn" class="button ghost">Download example</button>
-          <label class="button ghost file-button">Import JSON<input id="importInput" type="file" accept="application/json,.json" /></label>
+          <button id="exportBtn" class="button ghost backup-button">Export JSON</button>
+          <button id="sampleBtn" class="button ghost backup-button">Download example</button>
+          <label class="button ghost file-button backup-button">Import JSON<input id="importInput" type="file" accept="application/json,.json" /></label>
         </div>
         <p class="json-note">Note: standard JSON does not support comments. The exported example includes an <code>_allowedValues</code> helper section instead.</p>
         <pre id="output"></pre>
@@ -179,6 +179,6 @@
   </main>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="./app.js?v=2.5"></script>
+  <script src="./app.js?v=2.6"></script>
 </body>
 </html>

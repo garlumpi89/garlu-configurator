@@ -36,9 +36,7 @@ function showApp() {
 }
 
 function deviceDisplayName(device) {
-  const map = {
-    GARLU_FADER_MINI: "GARLU Fader Mini"
-  };
+  const map = { GARLU_FADER_MINI: "GARLU Fader Mini" };
   return map[device] || device || "Unknown GARLU device";
 }
 
@@ -46,7 +44,7 @@ function updateDeviceLabels(connectedLabel = null) {
   const name = deviceDisplayName(config.device);
   const fw = config.fw ? `FW ${config.fw}` : "FW —";
   $("sidebarFw").textContent = fw;
-  $("deviceInfo").textContent = `${name} · ${fw}`;
+  $("deviceInfo").innerHTML = `<span class="device-name-line">${name}</span><span class="device-fw-line">${fw}</span>`;
   $("deviceSummary").textContent = `${name} · ${fw}`;
   if (connectedLabel) $("connectionStatus").textContent = connectedLabel;
 }
