@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=2.4" />
+  <link rel="stylesheet" href="./style.css?v=2.5" />
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -16,13 +16,16 @@
   <section id="welcome" class="welcome">
     <div class="welcome-card">
       <div class="brand-mark">
-        <div class="futuristic-logo">GΛRLU</div>
-        <div class="brand-subtitle">FADER MINI</div>
+        <div class="stacked-logo">
+          <div>GARLU</div>
+          <div class="logo-line-small">FADER</div>
+          <div class="logo-line-mini">- MINI -</div>
+        </div>
       </div>
       <h1>Configure your tactile MIDI workflow.</h1>
-      <p>Connect your GARLU Fader Mini or explore the interface in demo mode.</p>
+      <p>Connect your GARLU device or explore the interface in demo mode.</p>
       <div class="welcome-actions">
-        <button id="welcomeConnectBtn" class="button primary">Connect device</button>
+        <button id="welcomeConnectBtn" class="button primary">Connect GARLU</button>
         <button id="demoBtn" class="button ghost">Try demo mode</button>
       </div>
       <div class="compatibility">Chrome / Edge desktop · USB Serial · MIDI-ready</div>
@@ -32,8 +35,12 @@
   <main id="app" class="app hidden">
     <aside class="sidebar">
       <div class="side-brand">
-        <div class="futuristic-logo small">GΛRLU</div>
-        <div class="brand-subtitle">FADER MINI</div>
+        <div class="stacked-logo small">
+          <div>GARLU</div>
+          <div class="logo-line-small">FADER</div>
+          <div class="logo-line-mini">- MINI -</div>
+        </div>
+        <div id="sidebarFw" class="sidebar-fw">FW —</div>
       </div>
 
       <nav class="nav-stack">
@@ -46,7 +53,7 @@
         <span id="statusDot" class="status-dot"></span>
         <div>
           <div id="connectionStatus">Not connected</div>
-          <small id="fwInfo">FW —</small>
+          <small id="deviceInfo">No device detected</small>
         </div>
       </div>
     </aside>
@@ -58,9 +65,8 @@
           <h2>Configure</h2>
         </div>
         <div class="top-actions">
-          <button id="connectBtn" class="button ghost">Connect</button>
-          <button id="readBtn" class="button ghost">Read</button>
-          <button id="saveBtn" class="button primary">Save to device</button>
+          <button id="connectBtn" class="button ghost connect-button">Connect GARLU</button>
+          <button id="saveBtn" class="button primary">Configure GARLU</button>
         </div>
       </header>
 
@@ -133,8 +139,8 @@
           </label>
 
           <div class="settings-footer">
-            <div class="footer-logo">GΛRLU MINI</div>
-            <div id="deviceSummary">USB MIDI · Ready</div>
+            <div class="footer-logo">Connected device</div>
+            <div id="deviceSummary">Waiting for GARLU device</div>
           </div>
         </aside>
       </section>
@@ -173,6 +179,6 @@
   </main>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="./app.js?v=2.4"></script>
+  <script src="./app.js?v=2.5"></script>
 </body>
 </html>

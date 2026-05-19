@@ -35,10 +35,28 @@ function showApp() {
   $("app").classList.remove("hidden");
 }
 
+function deviceDisplayName(device) {
+  const map = {
+    GARLU_FADER_MINI: "GARLU Fader Mini"
+  };
+  return map[device] || device || "Unknown GARLU device";
+}
+
+function updateDeviceLabels(connectedLabel = null) {
+  const name = deviceDisplayName(config.device);
+  const fw = config.fw ? `FW ${config.fw}` : "FW —";
+  $("sidebarFw").textContent = fw;
+  $("deviceInfo").textContent = `${name} · ${fw}`;
+  $("deviceSummary").textContent = `${name} · ${fw}`;
+  if (connectedLabel) $("connectionStatus").textContent = connectedLabel;
+}
+
 function setConnected(label, connected = true) {
   $("connectionStatus").textContent = label;
   $("statusDot").classList.toggle("connected", connected);
-  $("fwInfo").textContent = `FW ${config.fw || "—"}`;
+  $("connectBtn").classList.toggle("connected", connected);
+  $("connectBtn").textContent = connected ? "GARLU connected" : "Connect GARLU";
+  updateDeviceLabels();
 }
 
 function syncResolutionFields() {
@@ -142,7 +160,7 @@ function updateUiFromConfig() {
   $("resolutionMode").value = config.highResolution === true ? "enhanced" : "midi1";
   $("oledBrightness").value = ["low", "medium", "high"].includes(config.oledBrightness) ? config.oledBrightness : "medium";
   $("ringBrightness").value = ["low", "medium", "high"].includes(config.ringBrightness) ? config.ringBrightness : "medium";
-  $("fwInfo").textContent = `FW ${config.fw || "—"}`;
+  updateDeviceLabels();
 
   for (let i = 0; i < 4; i++) {
     const input = $(`cc${i}`);
@@ -234,17 +252,37 @@ async function readLine() {
   return text.trim();
 }
 
+async function readDeviceConfig() {
+  await writeLine("GET_CONFIG");
+  const response = await readLine();
+  output.textContent = response;
+  const parsed = JSON.parse(response);
+  Object.assign(config, parsed);
+  setValidationIssues(validateConfig(config));
+  updateUiFromConfig();
+}
+
 async function connectDevice() {
   if (!("serial" in navigator)) {
     alert("Web Serial is not supported. Use Chrome or Edge desktop.");
     return;
   }
+
   port = await navigator.serial.requestPort();
   await port.open({ baudRate: 115200 });
   demoMode = false;
   showApp();
-  setConnected("Device connected", true);
-  toast("GARLU connected");
+  $("connectBtn").textContent = "Reading GARLU...";
+  toast("Reading device configuration...");
+
+  try {
+    await readDeviceConfig();
+    setConnected("GARLU connected", true);
+    toast(`${deviceDisplayName(config.device)} connected`);
+  } catch (error) {
+    setConnected("GARLU connected", true);
+    toast("Connected, but config read failed");
+  }
 }
 
 $("welcomeConnectBtn").onclick = connectDevice;
@@ -253,29 +291,10 @@ $("connectBtn").onclick = connectDevice;
 $("demoBtn").onclick = () => {
   demoMode = true;
   showApp();
+  config.fw = "demo";
   setConnected("Demo mode", true);
   toast("Demo mode active");
   updateUiFromConfig();
-};
-
-$("readBtn").onclick = async () => {
-  if (demoMode) {
-    output.textContent = JSON.stringify(config, null, 2);
-    toast("Demo config loaded");
-    return;
-  }
-  if (!port) return alert("Connect device first.");
-  await writeLine("GET_CONFIG");
-  const response = await readLine();
-  output.textContent = response;
-  try {
-    Object.assign(config, JSON.parse(response));
-    setValidationIssues(validateConfig(config));
-    updateUiFromConfig();
-    toast("Configuration read");
-  } catch {
-    toast("Could not parse device response");
-  }
 };
 
 $("saveBtn").onclick = async () => {
@@ -289,15 +308,15 @@ $("saveBtn").onclick = async () => {
   if (demoMode) {
     Object.assign(config, payload);
     output.textContent = JSON.stringify(config, null, 2);
-    toast("Demo configuration saved");
+    toast("Demo configuration updated");
     return;
   }
 
-  if (!port) return alert("Connect device first.");
+  if (!port) return alert("Connect GARLU first.");
   await writeLine("SET_CONFIG " + JSON.stringify(payload));
   const response = await readLine();
   output.textContent = response;
-  toast("Configuration sent");
+  toast("GARLU configured");
 };
 
 document.querySelectorAll(".page").forEach((button) => {
