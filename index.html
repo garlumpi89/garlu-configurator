@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=2.8" />
+  <link rel="stylesheet" href="./style.css?v=2.9" />
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -25,7 +25,7 @@
       <h1>Configure your tactile MIDI workflow.</h1>
       <p>Connect your GARLU device or explore the interface in demo mode.</p>
       <div class="welcome-actions">
-        <button id="welcomeConnectBtn" class="button primary">Connect GARLU</button>
+        <button id="welcomeConnectBtn" class="button primary">Connect to GARLU</button>
         <button id="demoBtn" class="button ghost">Try demo mode</button>
       </div>
       <div class="compatibility">Chrome / Edge desktop · USB Serial · MIDI-ready</div>
@@ -64,7 +64,7 @@
           <h2>Configure</h2>
         </div>
         <div class="top-actions">
-          <button id="connectBtn" class="button ghost connect-button">Connect GARLU</button>
+          <button id="connectBtn" class="button ghost connect-button">Connect to GARLU</button>
           <button id="saveBtn" class="button primary">Configure GARLU</button>
         </div>
       </header>
@@ -136,9 +136,7 @@
               <option value="high">High</option>
             </select>
           </label>
-
-          <div id="deviceSummary" class="device-summary">Waiting for GARLU device</div>
-        </aside>
+</aside>
       </section>
 
       <section id="templates" class="panel stacked-panel">
@@ -175,6 +173,6 @@
   </main>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="./app.js?v=2.8"></script>
+  <script src="./app.js?v=2.9"></script>
 </body>
 </html>

@@ -44,7 +44,6 @@ function updateDeviceLabels(connectedLabel = null) {
   const name = deviceDisplayName(config.device);
   const fw = config.fw ? `FW ${config.fw}` : "FW —";
   $("deviceInfo").innerHTML = `<span class="device-name-line">${name}</span><span class="device-fw-line">${fw}</span>`;
-  $("deviceSummary").textContent = `${name} · ${fw}`;
   if (connectedLabel) $("connectionStatus").textContent = connectedLabel;
 }
 
@@ -52,7 +51,7 @@ function setConnected(label, connected = true) {
   $("connectionStatus").textContent = label;
   $("statusDot").classList.toggle("connected", connected);
   $("connectBtn").classList.toggle("connected", connected);
-  $("connectBtn").textContent = connected ? "GARLU connected" : "Connect GARLU";
+  $("connectBtn").textContent = connected ? "GARLU connected" : "Connect to GARLU";
   updateDeviceLabels();
 }
 
@@ -254,6 +253,7 @@ async function connectDevice() {
   await port.open({ baudRate: 115200 });
   demoMode = false;
   showApp();
+  $("connectBtn").classList.remove("connected");
   $("connectBtn").textContent = "Reading GARLU...";
   toast("Reading device configuration...");
 
