@@ -7,48 +7,203 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=2.1" />
+  <link rel="stylesheet" href="./style.css?v=2.2" />
 </head>
 <body>
   <div class="ambient ambient-one"></div>
   <div class="ambient ambient-two"></div>
+
   <section id="welcome" class="welcome">
     <div class="welcome-card">
-      <div class="brand-mark"><div class="futuristic-logo">GΛRLU</div><div class="brand-subtitle">FADER MINI</div></div>
+      <div class="brand-mark">
+        <div class="futuristic-logo">GΛRLU</div>
+        <div class="brand-subtitle">FADER MINI</div>
+      </div>
+
       <h1>Configure your tactile MIDI workflow.</h1>
       <p>Connect your GARLU Fader Mini or explore the interface in demo mode.</p>
-      <div class="welcome-actions"><button id="welcomeConnectBtn" class="button primary">Connect device</button><button id="demoBtn" class="button ghost">Try demo mode</button></div>
+
+      <div class="welcome-actions">
+        <button id="welcomeConnectBtn" class="button primary">Connect device</button>
+        <button id="demoBtn" class="button ghost">Try demo mode</button>
+      </div>
+
       <div class="compatibility">Chrome / Edge desktop · USB Serial · MIDI-ready</div>
     </div>
   </section>
+
   <main id="app" class="app hidden">
     <aside class="sidebar">
-      <div class="side-brand"><div class="futuristic-logo small">GΛRLU</div><div class="brand-subtitle">FADER MINI</div></div>
-      <nav class="nav-stack"><button class="nav active" data-view="configure">Configure</button><button class="nav" data-view="templates">Templates</button><button class="nav" data-view="backup">Import / Export</button></nav>
-      <div class="device-pill"><span id="statusDot" class="status-dot"></span><div><div id="connectionStatus">Not connected</div><small id="fwInfo">FW —</small></div></div>
+      <div class="side-brand">
+        <div class="futuristic-logo small">GΛRLU</div>
+        <div class="brand-subtitle">FADER MINI</div>
+      </div>
+
+      <nav class="nav-stack">
+        <button class="nav active" data-view="configure">Configure</button>
+        <button class="nav" data-view="templates">Templates</button>
+        <button class="nav" data-view="backup">Import / Export</button>
+      </nav>
+
+      <div class="device-pill">
+        <span id="statusDot" class="status-dot"></span>
+        <div>
+          <div id="connectionStatus">Not connected</div>
+          <small id="fwInfo">FW —</small>
+        </div>
+      </div>
     </aside>
+
     <section class="workspace">
-      <header class="topbar"><div><span class="eyebrow">GARLU Configurator</span><h2 id="viewTitle">Configure</h2></div><div class="top-actions"><button id="connectBtn" class="button ghost">Connect</button><button id="readBtn" class="button ghost">Read</button><button id="saveBtn" class="button primary">Save to device</button></div></header>
-      <section id="configureView" class="view active-view"><div class="layout">
-        <section class="panel main-panel"><div class="panel-header"><div><h3>MIDI CC Assignments</h3><p>Four pages. Four physical faders per page.</p></div><div class="page-switch"><button class="page active" data-page="0">01</button><button class="page" data-page="1">02</button><button class="page" data-page="2">03</button><button class="page" data-page="3">04</button></div></div><div class="fader-grid">
-          <article class="fader-card"><div class="fader-icon"><span></span></div><div class="fader-label">Fader 1</div><input id="cc0" type="number" min="0" max="127" /><div class="cc-caption">MIDI CC</div></article>
-          <article class="fader-card"><div class="fader-icon"><span></span></div><div class="fader-label">Fader 2</div><input id="cc1" type="number" min="0" max="127" /><div class="cc-caption">MIDI CC</div></article>
-          <article class="fader-card"><div class="fader-icon"><span></span></div><div class="fader-label">Fader 3</div><input id="cc2" type="number" min="0" max="127" /><div class="cc-caption">MIDI CC</div></article>
-          <article class="fader-card"><div class="fader-icon"><span></span></div><div class="fader-label">Fader 4</div><input id="cc3" type="number" min="0" max="127" /><div class="cc-caption">MIDI CC</div></article>
-        </div></section>
-        <aside class="panel settings-panel"><h3>Device Settings</h3>
-          <label class="setting"><span>Screen layout</span><select id="screenLayout"><option value="standard">Standard Layout</option><option value="performance">Performance Layout</option></select></label>
-          <label class="setting"><span>Resolution</span><select id="resolutionMode"><option value="midi1">MIDI 1.0 (7-bit)</option><option value="enhanced">Enhanced MIDI 1.0 (14-bit)</option></select></label>
-          <label class="setting"><span>OLED brightness</span><select id="oledBrightness"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
-          <label class="setting"><span>Ring brightness</span><select id="ringBrightness"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
-          <div class="settings-footer"><div class="footer-logo">GΛRLU MINI</div><div id="deviceSummary">USB MIDI · Ready</div></div>
-        </aside>
-      </div></section>
-      <section id="templatesView" class="view"><div class="panel"><div class="panel-header"><div><h3>Templates</h3><p>Quick starting points for common workflows.</p></div></div><div class="template-grid"><button class="template" data-template="default"><strong>Default</strong><span>Expression, modulation, volume and utility CCs.</span></button><button class="template" data-template="ableton"><strong>Ableton Mixer</strong><span>Volume, sends, pan and device macros.</span></button><button class="template" data-template="synth"><strong>Synth Control</strong><span>Filter, resonance, envelope and modulation.</span></button><button class="template" data-template="orchestral"><strong>Orchestral Expression</strong><span>Expression, dynamics, vibrato and timbre.</span></button></div></div></section>
-      <section id="backupView" class="view"><div class="panel"><div class="panel-header"><div><h3>Import / Export</h3><p>Save configurations as JSON files or load presets from your computer.</p></div></div><div class="backup-actions"><button id="exportBtn" class="button ghost">Export JSON</button><label class="button ghost file-button">Import JSON<input id="importInput" type="file" accept="application/json,.json" /></label></div><pre id="output"></pre></div></section>
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">GARLU Configurator</span>
+          <h2 id="viewTitle">Configure</h2>
+        </div>
+
+        <div class="top-actions">
+          <button id="connectBtn" class="button ghost">Connect</button>
+          <button id="readBtn" class="button ghost">Read</button>
+          <button id="saveBtn" class="button primary">Save to device</button>
+        </div>
+      </header>
+
+      <div id="validationPanel" class="validation-panel hidden">
+        <div>
+          <strong>Configuration issues detected</strong>
+          <p id="validationSummary">Some values are outside the allowed MIDI range.</p>
+        </div>
+        <button id="autoFixBtn" class="button danger-soft">Fix automatically</button>
+      </div>
+
+      <section id="configureView" class="view active-view">
+        <div class="layout">
+          <section class="panel main-panel">
+            <div class="panel-header">
+              <div>
+                <h3>MIDI CC Assignments</h3>
+                <p>Four pages. Four physical faders per page.</p>
+              </div>
+              <div class="page-switch">
+                <button class="page active" data-page="0">01</button>
+                <button class="page" data-page="1">02</button>
+                <button class="page" data-page="2">03</button>
+                <button class="page" data-page="3">04</button>
+              </div>
+            </div>
+
+            <div class="fader-grid">
+              <article class="fader-card" id="card0">
+                <div class="fader-icon"><span></span></div>
+                <div class="fader-label">Fader 1</div>
+                <input id="cc0" type="number" />
+                <div class="cc-caption" id="hint0">MIDI CC</div>
+              </article>
+              <article class="fader-card" id="card1">
+                <div class="fader-icon"><span></span></div>
+                <div class="fader-label">Fader 2</div>
+                <input id="cc1" type="number" />
+                <div class="cc-caption" id="hint1">MIDI CC</div>
+              </article>
+              <article class="fader-card" id="card2">
+                <div class="fader-icon"><span></span></div>
+                <div class="fader-label">Fader 3</div>
+                <input id="cc2" type="number" />
+                <div class="cc-caption" id="hint2">MIDI CC</div>
+              </article>
+              <article class="fader-card" id="card3">
+                <div class="fader-icon"><span></span></div>
+                <div class="fader-label">Fader 4</div>
+                <input id="cc3" type="number" />
+                <div class="cc-caption" id="hint3">MIDI CC</div>
+              </article>
+            </div>
+          </section>
+
+          <aside class="panel settings-panel">
+            <h3>Device Settings</h3>
+
+            <label class="setting">
+              <span>Screen layout</span>
+              <select id="screenLayout">
+                <option value="standard">Standard Layout</option>
+                <option value="performance">Performance Layout</option>
+              </select>
+            </label>
+
+            <label class="setting">
+              <span>Resolution</span>
+              <select id="resolutionMode">
+                <option value="midi1">MIDI 1.0 (7-bit)</option>
+                <option value="enhanced">Enhanced MIDI 1.0 (14-bit)</option>
+              </select>
+            </label>
+
+            <label class="setting">
+              <span>OLED brightness</span>
+              <select id="oledBrightness">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+
+            <label class="setting">
+              <span>Ring brightness</span>
+              <select id="ringBrightness">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+
+            <div class="settings-footer">
+              <div class="footer-logo">GΛRLU MINI</div>
+              <div id="deviceSummary">USB MIDI · Ready</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="templatesView" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Templates</h3>
+              <p>Quick starting points for common workflows.</p>
+            </div>
+          </div>
+          <div class="template-grid">
+            <button class="template" data-template="default"><strong>Default</strong><span>Expression, modulation, volume and utility CCs.</span></button>
+            <button class="template" data-template="ableton"><strong>Ableton Mixer</strong><span>Volume, sends, pan and device macros.</span></button>
+            <button class="template" data-template="synth"><strong>Synth Control</strong><span>Filter, resonance, envelope and modulation.</span></button>
+            <button class="template" data-template="orchestral"><strong>Orchestral Expression</strong><span>Expression, dynamics, vibrato and timbre.</span></button>
+          </div>
+        </div>
+      </section>
+
+      <section id="backupView" class="view">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Import / Export</h3>
+              <p>Save configurations as JSON files or load presets from your computer.</p>
+            </div>
+          </div>
+          <div class="backup-actions">
+            <button id="exportBtn" class="button ghost">Export JSON</button>
+            <label class="button ghost file-button">
+              Import JSON
+              <input id="importInput" type="file" accept="application/json,.json" />
+            </label>
+          </div>
+          <pre id="output"></pre>
+        </div>
+      </section>
     </section>
   </main>
+
   <div id="toast" class="toast hidden"></div>
-  <script src="./app.js?v=2.1"></script>
+  <script src="./app.js?v=2.2"></script>
 </body>
 </html>
