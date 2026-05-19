@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GARLU Configurator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo">GARLU</div><div class="subtitle">FADER MINI</div></div>
+      <nav><button class="nav active">Configure</button><button class="nav">Device Info</button><button class="nav">Presets</button></nav>
+      <div class="status"><span class="dot"></span><span id="connectionStatus">Not connected</span></div>
+    </aside>
+    <section class="content">
+      <header>
+        <div><h1>Configure</h1><p>Customize MIDI CC assignments and device settings.</p></div>
+        <div class="actions"><button id="connectBtn">Connect device</button><button id="readBtn">Read from device</button><button id="saveBtn" class="primary">Save to device</button></div>
+      </header>
+      <section class="grid">
+        <div class="card main-card">
+          <h2>MIDI CC Assignments</h2>
+          <div class="pages">
+            <button class="page active" data-page="0">Page 1</button><button class="page" data-page="1">Page 2</button><button class="page" data-page="2">Page 3</button><button class="page" data-page="3">Page 4</button>
+          </div>
+          <div class="faders">
+            <label>Fader 1<input id="cc0" type="number" min="0" max="127" /></label>
+            <label>Fader 2<input id="cc1" type="number" min="0" max="127" /></label>
+            <label>Fader 3<input id="cc2" type="number" min="0" max="127" /></label>
+            <label>Fader 4<input id="cc3" type="number" min="0" max="127" /></label>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Device Settings</h2>
+          <label class="setting">Screen layout<select id="screenLayout"><option value="standard">Standard Layout</option><option value="performance">Performance Layout</option></select></label>
+          <label class="setting checkbox"><input id="highResolution" type="checkbox" /> High Resolution</label>
+          <label class="setting">OLED brightness<select id="oledBrightness"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+          <label class="setting">Ring brightness<select id="ringBrightness"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+        </div>
+      </section>
+      <pre id="output"></pre>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
