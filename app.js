@@ -7,13 +7,15 @@ const templates={
  synth:{pages:[{cc:[74,71,73,72]},{cc:[1,11,5,65]},{cc:[20,21,22,23]},{cc:[24,25,26,27]}]},
  orchestral:{pages:[{cc:[11,1,2,21]},{cc:[22,23,24,25]},{cc:[26,27,28,29]},{cc:[30,31,0,1]}]}
 };
-const config={device:"GARLU_FADER_MINI",fw:"demo",screenLayout:"standard",highResolution:false,oledBrightness:"medium",ringBrightness:70,pages:JSON.parse(JSON.stringify(templates.default.pages))};
+const config={device:"GARLU_FADER_MINI",fw:"demo",screenLayout:"standard",highResolution:false,oledBrightness:70,ringBrightness:70,pages:JSON.parse(JSON.stringify(templates.default.pages))};
 const brightMap={low:25,medium:70,high:100};
+function normalizePercent(v){if(typeof v==="string"&&v in brightMap)return brightMap[v];const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):70}
 
 function toast(m){const e=$("toast");if(!e)return;e.textContent=m;e.classList.remove("hidden");setTimeout(()=>e.classList.add("hidden"),2200)}
 function showApp(){$("welcome").classList.add("hidden");$("app").classList.remove("hidden")}
 function deviceDisplayName(d){return {GARLU_FADER_MINI:"GARLU Fader Mini"}[d]||d||"Unknown GARLU device"}
-function normalizeRing(v){if(typeof v==="string"&&v in brightMap)return brightMap[v];const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):70}
+function normalizeRing(v){return normalizePercent(v)}
+function normalizeOled(v){return normalizePercent(v)}
 function updateDeviceLabels(){const n=deviceDisplayName(config.device),fw=config.fw?`FW ${config.fw}`:"FW —";const el=$("deviceInfo");if(el)el.innerHTML=`<span class="device-name-line">${n}</span><span class="device-fw-line">${fw}</span>`}
 function showConnectionWarning(message="Connect to GARLU before updating the device."){const el=$("connectionWarning");if(!el)return;el.textContent=message;el.classList.remove("hidden");clearTimeout(window.__garluConnectionWarningTimer);window.__garluConnectionWarningTimer=setTimeout(()=>el.classList.add("hidden"),5200)}
 function hideConnectionWarning(){const el=$("connectionWarning");if(el)el.classList.add("hidden")}
@@ -27,7 +29,7 @@ function setConnected(label="GARLU connected",connected=true){
   btn.classList.toggle("connected",connected);
   btn.classList.remove("disconnected");
   btn.textContent=connected?"GARLU connected":"Connect to GARLU";
-  updateDeviceLabels();
+  const pill=document.querySelector(".device-pill");if(pill)pill.classList.remove("disconnected-compact");updateDeviceLabels();
   if(connected)hideConnectionWarning();
 }
 function setDisconnected(red=false){
@@ -41,7 +43,7 @@ function setDisconnected(red=false){
   dot.classList.toggle("disconnected",red);
   btn.classList.remove("connected");
   btn.classList.toggle("disconnected",red);
-  btn.textContent=red?"GARLU disconnected":"Connect to GARLU";
+  btn.textContent=red?"GARLU disconnected":"Connect to GARLU";const pill=document.querySelector(".device-pill");if(pill)pill.classList.toggle("disconnected-compact",red);
 }
 function toggleConnection(){
   if(isConnected){
@@ -62,7 +64,7 @@ function validateConfig(c){
   const issues=[],layouts=["standard","performance"],bright=["low","medium","high"];
   if(typeof c.highResolution!=="boolean")issues.push({type:"field",field:"highResolution",message:`highResolution must be true or false. Current value: ${JSON.stringify(c.highResolution)}.`});
   if(!layouts.includes(c.screenLayout))issues.push({type:"field",field:"screenLayout",message:`screenLayout must be "standard" or "performance". Current value: ${JSON.stringify(c.screenLayout)}.`});
-  if(!bright.includes(c.oledBrightness))issues.push({type:"field",field:"oledBrightness",message:`oledBrightness must be "low", "medium" or "high". Current value: ${JSON.stringify(c.oledBrightness)}.`});
+  const ob=normalizeOled(c.oledBrightness);if(!Number.isFinite(ob)||ob<0||ob>100)issues.push({type:"field",field:"oledBrightness",message:`oledBrightness must be between 0 and 100. Current value: ${JSON.stringify(c.oledBrightness)}.`});
   const rb=normalizeRing(c.ringBrightness);if(!Number.isFinite(rb)||rb<0||rb>100)issues.push({type:"field",field:"ringBrightness",message:`ringBrightness must be between 0 and 100. Current value: ${JSON.stringify(c.ringBrightness)}.`});
   if(!c.pages||!Array.isArray(c.pages)||c.pages.length!==4){issues.push({type:"structure",message:"Expected exactly 4 pages."});return issues}
   const max=maxAllowedCC(c);
@@ -108,11 +110,12 @@ function initCustomSelects(){
   });
   document.addEventListener("click",()=>document.querySelectorAll(".custom-select.open").forEach(w=>w.classList.remove("open")));
 }
+function updateOledSlider(){const s=$("oledBrightness"),v=$("oledBrightnessValue");if(!s)return;const val=normalizeOled(config.oledBrightness);s.value=val;s.style.setProperty("--ring-fill",`${val}%`);if(v)v.textContent=`${val}%`}
 function updateRingSlider(){const s=$("ringBrightness"),v=$("ringBrightnessValue");if(!s)return;const val=normalizeRing(config.ringBrightness);s.value=val;s.style.setProperty("--ring-fill",`${val}%`);if(v)v.textContent=`${val}%`}
 function updateUiFromConfig(){
   $("screenLayout").value=["standard","performance"].includes(config.screenLayout)?config.screenLayout:"standard";
   $("resolutionMode").value=config.highResolution===true?"enhanced":"midi1";
-  $("oledBrightness").value=["low","medium","high"].includes(config.oledBrightness)?config.oledBrightness:"medium";
+  $("oledBrightness").value=["low","medium","high"].includes(config.oledBrightness)?config.oledBrightness:70;
   config.ringBrightness=normalizeRing(config.ringBrightness);updateRingSlider();
   for(let i=0;i<4;i++){const input=$(`cc${i}`);input.max=maxAllowedCC();input.min=0;input.value=config.pages[currentPage]?.cc?.[i]??""}
   updateDeviceLabels();updateValidationHighlights();syncCustomSelects();
@@ -121,13 +124,13 @@ function updateConfigFromUi(){
   suppressTopValidation=false;
   config.screenLayout=$("screenLayout").value;
   config.highResolution=$("resolutionMode").value==="enhanced";
-  config.oledBrightness=$("oledBrightness").value;
+  config.oledBrightness=normalizeOled($("oledBrightness").value);updateOledSlider();
   config.ringBrightness=normalizeRing($("ringBrightness").value);updateRingSlider();
   for(let i=0;i<4;i++){const raw=$(`cc${i}`).value;config.pages[currentPage].cc[i]=raw===""?0:Number(raw)}
   setValidationIssues(validateConfig(config));
 }
 function configForDevice(){updateConfigFromUi();if(validationIssues.length)return null;return{device:"GARLU_FADER_MINI",screenLayout:config.screenLayout,highResolution:config.highResolution,oledBrightness:config.oledBrightness,ringBrightness:config.ringBrightness,pages:config.pages}}
-function sampleConfig(){return{_allowedValues:{screenLayout:["standard","performance"],highResolution:[false,true],oledBrightness:["low","medium","high"],ringBrightness:"0-100",ccRange:"0-127 when highResolution=false; 0-31 when highResolution=true"},device:"GARLU_FADER_MINI",screenLayout:"standard",highResolution:false,oledBrightness:"medium",ringBrightness:70,pages:JSON.parse(JSON.stringify(templates.default.pages))}}
+function sampleConfig(){return{_allowedValues:{screenLayout:["standard","performance"],highResolution:[false,true],oledBrightness:"0-100",ringBrightness:"0-100",ccRange:"0-127 when highResolution=false; 0-31 when highResolution=true"},device:"GARLU_FADER_MINI",screenLayout:"standard",highResolution:false,oledBrightness:70,ringBrightness:70,pages:JSON.parse(JSON.stringify(templates.default.pages))}}
 function downloadJson(fn,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url)}
 async function writeLine(line){const w=port.writable.getWriter();await w.write(new TextEncoder().encode(line+"\n"));w.releaseLock()}
 async function readLine(){const r=port.readable.getReader();let text="";while(true){const{value,done}=await r.read();if(done)break;text+=new TextDecoder().decode(value);if(text.includes("\n"))break}r.releaseLock();return text.trim()}
@@ -188,10 +191,10 @@ function init(){
   document.querySelectorAll(".page").forEach(b=>b.onclick=()=>{updateConfigFromUi();document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPage=Number(b.dataset.page);updateUiFromConfig()});
   document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");if(b.dataset.scroll==="assignments"){window.scrollTo({top:0,behavior:"smooth"});return}document.getElementById(b.dataset.scroll).scrollIntoView({behavior:"smooth",block:"start"})});
   ["screenLayout","resolutionMode","oledBrightness","ringBrightness","cc0","cc1","cc2","cc3"].forEach(id=>$(id).addEventListener("change",()=>{updateConfigFromUi();updateUiFromConfig()}));
-  $("ringBrightness").addEventListener("input",()=>{config.ringBrightness=normalizeRing($("ringBrightness").value);updateRingSlider()});
+  $("oledBrightness").addEventListener("input",()=>{config.oledBrightness=normalizeOled($("oledBrightness").value);updateOledSlider()});$("ringBrightness").addEventListener("input",()=>{config.ringBrightness=normalizeRing($("ringBrightness").value);updateRingSlider()});
   document.querySelectorAll(".template").forEach(b=>b.onclick=()=>applyTemplatePages(templates[b.dataset.template].pages,"Template applied"));
   $("templateInput").addEventListener("click",e=>e.target.value="");
-  $("templateInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;const raw=await f.text();try{const p=JSON.parse(raw),candidate={device:p.device||"GARLU_FADER_MINI",screenLayout:p.screenLayout||"standard",highResolution:Boolean(p.highResolution),oledBrightness:p.oledBrightness||"medium",ringBrightness:p.ringBrightness??70,pages:p.pages},issues=validateConfig(candidate);if(issues.length){setJsonWarnings(issues.map(i=>i.message));setOutputText(raw,true);toast("Template has validation issues");return}const items=getLocalTemplates();items.push({name:p.name||f.name.replace(/\.json$/i,""),description:p.description||"Local user template",pages:p.pages});saveLocalTemplates(items);renderLocalTemplates();setOutputText(JSON.stringify(p,null,2));toast("Local template added")}catch{setJsonWarnings(["Invalid JSON syntax. Check commas, quotes and boolean values."]);setOutputText(raw,true);toast("Invalid template JSON")}finally{e.target.value=""}};
+  $("templateInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;const raw=await f.text();try{const p=JSON.parse(raw),candidate={device:p.device||"GARLU_FADER_MINI",screenLayout:p.screenLayout||"standard",highResolution:Boolean(p.highResolution),oledBrightness:p.oledBrightness??70,ringBrightness:p.ringBrightness??70,pages:p.pages},issues=validateConfig(candidate);if(issues.length){setJsonWarnings(issues.map(i=>i.message));setOutputText(raw,true);toast("Template has validation issues");return}const items=getLocalTemplates();items.push({name:p.name||f.name.replace(/\.json$/i,""),description:p.description||"Local user template",pages:p.pages});saveLocalTemplates(items);renderLocalTemplates();setOutputText(JSON.stringify(p,null,2));toast("Local template added")}catch{setJsonWarnings(["Invalid JSON syntax. Check commas, quotes and boolean values."]);setOutputText(raw,true);toast("Invalid template JSON")}finally{e.target.value=""}};
   $("exportBtn").onclick=()=>{const payload=configForDevice();if(!payload){toast("Fix configuration issues before export");return}downloadJson("garlu-config.json",payload);toast("JSON exported")};
   $("sampleBtn").onclick=()=>{downloadJson("garlu-config-example.json",sampleConfig());toast("Example downloaded")};
   $("importInput").addEventListener("click",e=>e.target.value="");

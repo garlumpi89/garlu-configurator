@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GARLU Configurator</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="./style.css?v=2.23"></head><body>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GARLU Configurator</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="./style.css?v=2.24"></head><body>
 <section id="welcome" class="welcome">
     <div class="landing-light-orb orb-a"></div>
     <div class="landing-light-orb orb-b"></div>
@@ -37,7 +37,19 @@
     </div>
   </section>
 
-  <main id="app" class="app hidden"><aside class="sidebar"><div class="side-brand"><div class="stacked-logo compact"><div>GΛRLU</div><div class="logo-sub">FADER MINI</div></div></div><nav class="nav-stack"><button class="nav active" data-scroll="assignments">
+  <main id="app" class="app hidden"><aside class="sidebar"><div class="side-brand">
+        <div class="dashboard-brand">
+          <div class="dashboard-fader-mark" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <div class="dashboard-logo">
+            <div>GΛRLU</div>
+            <div>FADER</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav-stack"><button class="nav active" data-scroll="assignments">
           <svg class="nav-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
           </svg>
@@ -94,31 +106,20 @@
               <option value="enhanced">Enhanced MIDI 1.0 (14-bit)</option>
             </select>
             <small id="resolutionHint"></small>
-          </label><label class="setting">
-            <span>OLED Brightness</span>
-            <div class="custom-select" data-select="oledBrightness">
-              <button type="button" class="custom-select-trigger">
-                <span>Medium</span>
-              </button>
-              <div class="custom-select-menu">
-                <button type="button" data-value="low">Low</button>
-                <button type="button" data-value="medium">Medium</button>
-                <button type="button" data-value="high">High</button>
-              </div>
-            </div>
-            <select id="oledBrightness" class="native-select-hidden">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
           </label><div class="range-setting">
+            <div class="range-heading">
+              <span>OLED Brightness</span>
+              <strong id="oledBrightnessValue">70%</strong>
+            </div>
+            <input id="oledBrightness" class="range-slider" type="range" min="0" max="100" step="1" value="70" />
+          </div><div class="range-setting">
             <div class="range-heading">
               <span>Ring Brightness</span>
               <strong id="ringBrightnessValue">70%</strong>
             </div>
             <input id="ringBrightness" class="range-slider" type="range" min="0" max="100" step="1" value="70" />
           </div></aside></section>
-<section class="secondary-grid"><section id="backup" class="panel utility-panel"><div class="panel-header compact"><div><h3>JSON Import/Export</h3><p>Import or export your configuration as a JSON file.</p></div></div><div class="backup-actions"><label class="button ghost backup-button">Import JSON<input id="importInput" type="file" accept="application/json,.json"></label><button id="sampleBtn" class="button ghost backup-button">Download Example</button><button id="exportBtn" class="button ghost backup-button">Export JSON</button></div><p class="json-note">Note: standard JSON does not support comments. The exported example includes an <code>_allowedValues</code> helper section instead.</p>
+<section class="secondary-grid"><section id="backup" class="panel utility-panel"><div class="panel-header compact"><div><h3>JSON Import/Export</h3><p>Import or export your configuration as a JSON file.</p></div></div><div class="backup-actions"><label class="button ghost backup-button">Import JSON<input id="importInput" class="file-input-hidden" type="file" accept="application/json,.json"></label><button id="sampleBtn" class="button ghost backup-button">Download Example</button><button id="exportBtn" class="button ghost backup-button">Export JSON</button></div><p class="json-note">Note: standard JSON does not support comments. The exported example includes an <code>_allowedValues</code> helper section instead.</p>
           <div id="jsonWarnings" class="json-warnings hidden">
             <span id="jsonWarningsText"></span>
             <button id="jsonWarningsClose" type="button" aria-label="Close warning">×</button>
@@ -126,4 +127,4 @@
           <textarea id="output" spellcheck="false" aria-label="JSON editor"></textarea>
           <div class="json-editor-actions">
             <button id="applyJsonBtn" class="button ghost backup-button">Save JSON file</button>
-          </div></section><section id="templates" class="panel utility-panel"><div class="panel-header compact"><div><h3>Templates</h3><p>Load a template to quickly apply a preset configuration.</p></div></div><div class="template-actions"><label class="button ghost backup-button">Add Local Template<input id="templateInput" type="file" accept="application/json,.json"></label></div><div class="template-grid" id="templateGrid"><button class="template" data-template="default"><strong>Default</strong><span>Expression, modulation, volume and utility CCs.</span></button><button class="template" data-template="ableton"><strong>Ableton Mixer</strong><span>Volume, sends, pan and device macros.</span></button><button class="template" data-template="synth"><strong>Synth Control</strong><span>Filter, resonance, envelope and modulation.</span></button><button class="template" data-template="orchestral"><strong>Orchestral Expression</strong><span>Expression, dynamics, vibrato and timbre.</span></button></div></section></section></section></main><div id="toast" class="toast hidden"></div><script src="./app.js?v=2.23"></script></body></html>
+          </div></section><section id="templates" class="panel utility-panel"><div class="panel-header compact"><div><h3>Templates</h3><p>Load a template to quickly apply a preset configuration.</p></div></div><div class="template-actions"><label class="button ghost backup-button">Add Local Template<input id="templateInput" type="file" accept="application/json,.json"></label></div><div class="template-grid" id="templateGrid"><button class="template" data-template="default"><strong>Default</strong><span>Expression, modulation, volume and utility CCs.</span></button><button class="template" data-template="ableton"><strong>Ableton Mixer</strong><span>Volume, sends, pan and device macros.</span></button><button class="template" data-template="synth"><strong>Synth Control</strong><span>Filter, resonance, envelope and modulation.</span></button><button class="template" data-template="orchestral"><strong>Orchestral Expression</strong><span>Expression, dynamics, vibrato and timbre.</span></button></div></section></section></section></main><div id="toast" class="toast hidden"></div><script src="./app.js?v=2.24"></script></body></html>

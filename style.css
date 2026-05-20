@@ -1016,3 +1016,118 @@ body:after {
   from { transform: translateY(-4px); opacity: .35; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+
+/* v2.24 refinements */
+.file-input-hidden,
+#importInput {
+  display: none !important;
+}
+
+.dashboard-brand {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.dashboard-logo {
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-weight: 700;
+  line-height: .86;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--text);
+  font-size: clamp(22px, 2.1vw, 30px);
+}
+
+.dashboard-logo div:nth-child(2) {
+  margin-top: 9px;
+  font-size: .43em;
+  letter-spacing: .42em;
+  color: #a7a7a7;
+}
+
+.dashboard-fader-mark {
+  display: grid;
+  grid-template-columns: repeat(3, 8px);
+  gap: 7px;
+  height: 58px;
+  align-items: stretch;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,.16));
+}
+
+.dashboard-fader-mark i {
+  position: relative;
+  display: block;
+}
+
+.dashboard-fader-mark i:before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.58));
+}
+
+.dashboard-fader-mark i:after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 11px;
+  height: 15px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #fff, #cfcfcf);
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(255,255,255,.18);
+}
+
+.dashboard-fader-mark i:nth-child(1):after { top: 54%; }
+.dashboard-fader-mark i:nth-child(2):after { top: 22%; }
+.dashboard-fader-mark i:nth-child(3):after { top: 42%; }
+
+.mini-fader span,
+.landing-fader-mark i:after {
+  animation: landingFaderMove 4.8s ease-in-out infinite;
+}
+
+.mini-fader:nth-child(2) span,
+.landing-fader-mark i:nth-child(2):after {
+  animation-delay: .7s;
+}
+
+.mini-fader:nth-child(3) span,
+.landing-fader-mark i:nth-child(3):after {
+  animation-delay: 1.3s;
+}
+
+.mini-fader:nth-child(4) span {
+  animation-delay: 2s;
+}
+
+@keyframes landingFaderMove {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-28px); }
+}
+
+.device-pill.disconnected-compact #deviceInfo {
+  display: none !important;
+}
+
+.device-pill.disconnected-compact #connectionStatus {
+  color: #ffb4b4;
+}
+
+.range-setting + .range-setting {
+  padding-top: 18px;
+}
+
+@media(max-width:920px) {
+  .dashboard-brand {
+    justify-content: flex-start;
+  }
+}
