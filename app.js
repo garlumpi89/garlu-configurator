@@ -32,12 +32,19 @@ function escapeHTML(value) {
 
 function setOutputText(text, isError = false) {
   output.classList.toggle("output-error", isError);
-  output.textContent = text;
+  output.value = text;
 }
 
 function setOutputHTML(html, isError = false) {
   output.classList.toggle("output-error", isError);
-  output.innerHTML = html;
+  // Textarea cannot render HTML highlights; keep the full JSON editable and show issues as text.
+  const text = String(html)
+    .replace(/<span class="output-issues">/g, "")
+    .replace(/<\/span>/g, "
+")
+    .replace(/<span class="json-error-highlight">/g, "")
+    .replace(/<[^>]*>/g, "");
+  output.value = text;
 }
 
 function highlightJsonIssues(rawText, issues) {
@@ -480,6 +487,50 @@ $("templateInput").onchange = async (event) => {
   }
 };
 
+
+function importConfigFromRawText(rawText, sourceLabel = "JSON") {
+  try {
+    const parsed = JSON.parse(rawText);
+    if (!parsed.pages || parsed.pages.length !== 4) throw new Error("Invalid pages");
+
+    config.device = parsed.device || "GARLU_FADER_MINI";
+    config.fw = parsed.fw || config.fw || "imported";
+    config.screenLayout = parsed.screenLayout;
+    config.highResolution = parsed.highResolution;
+    config.oledBrightness = parsed.oledBrightness;
+    config.ringBrightness = parsed.ringBrightness;
+    config.pages = JSON.parse(JSON.stringify(parsed.pages));
+
+    currentPage = 0;
+    document.querySelectorAll(".page").forEach((b) => b.classList.remove("active"));
+    document.querySelector('.page[data-page="0"]').classList.add("active");
+
+    const issues = validateConfig(config);
+    setValidationIssues(issues);
+    updateUiFromConfig();
+
+    if (issues.length) {
+      setOutputText(`${issues.map((issue) => `• ${issue.message}`).join("\\n")}\\n\\n${rawText}`, true);
+      toast(`${sourceLabel} has warnings`);
+      return false;
+    }
+
+    setOutputText(JSON.stringify(config, null, 2));
+    toast(`${sourceLabel} applied`);
+    return true;
+  } catch {
+    const message = "Invalid JSON syntax or GARLU structure. Check commas, quotes and boolean values.";
+    setValidationIssues([{ type: "structure", message }]);
+    setOutputText(`• ${message}\\n\\n${rawText}`, true);
+    toast("Invalid JSON");
+    return false;
+  }
+}
+
+$("applyJsonBtn").onclick = () => {
+  importConfigFromRawText(output.value, "JSON changes");
+};
+
 $("exportBtn").onclick = () => {
   const payload = configForDevice();
   if (!payload) {
@@ -504,44 +555,10 @@ $("importInput").onchange = async (event) => {
   if (!file) return;
 
   const rawText = await file.text();
+  importConfigFromRawText(rawText, "JSON");
 
-  try {
-    const parsed = JSON.parse(rawText);
-    if (!parsed.pages || parsed.pages.length !== 4) throw new Error("Invalid pages");
-
-    config.device = parsed.device || "GARLU_FADER_MINI";
-    config.fw = parsed.fw || config.fw || "imported";
-    config.screenLayout = parsed.screenLayout;
-    config.highResolution = parsed.highResolution;
-    config.oledBrightness = parsed.oledBrightness;
-    config.ringBrightness = parsed.ringBrightness;
-    config.pages = JSON.parse(JSON.stringify(parsed.pages));
-
-    currentPage = 0;
-    document.querySelectorAll(".page").forEach((b) => b.classList.remove("active"));
-    document.querySelector('.page[data-page="0"]').classList.add("active");
-
-    const issues = validateConfig(config);
-    setValidationIssues(issues);
-    updateUiFromConfig();
-
-    if (issues.length) {
-      setOutputHTML(highlightJsonIssues(rawText, issues), true);
-    } else {
-      setOutputText(JSON.stringify(config, null, 2));
-    }
-
-    document.getElementById("assignments").scrollIntoView({ behavior: "smooth", block: "start" });
-
-    toast(issues.length ? "Imported with warnings" : "JSON imported");
-  } catch {
-    const issues = [{ type: "structure", message: "Invalid JSON syntax or GARLU structure. Check commas, quotes and boolean values." }];
-    setValidationIssues(issues);
-    setOutputHTML(`<span class="output-issues">• ${escapeHTML(issues[0].message)}</span>${escapeHTML(rawText)}`, true);
-    toast("Invalid JSON");
-  } finally {
-    event.target.value = "";
-  }
+  document.getElementById("assignments").scrollIntoView({ behavior: "smooth", block: "start" });
+  event.target.value = "";
 };
 
 
