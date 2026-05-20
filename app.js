@@ -15,7 +15,7 @@ function showApp(){$("welcome").classList.add("hidden");$("app").classList.remov
 function deviceDisplayName(d){return {GARLU_FADER_MINI:"GARLU Fader Mini"}[d]||d||"Unknown GARLU device"}
 function normalizeRing(v){if(typeof v==="string"&&v in brightMap)return brightMap[v];const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):70}
 function updateDeviceLabels(){const n=deviceDisplayName(config.device),fw=config.fw?`FW ${config.fw}`:"FW —";const el=$("deviceInfo");if(el)el.innerHTML=`<span class="device-name-line">${n}</span><span class="device-fw-line">${fw}</span>`}
-function showConnectionWarning(message="Connect to GARLU before updating the device."){const el=$("connectionWarning");if(!el)return;el.textContent=message;el.classList.remove("hidden");setTimeout(()=>el.classList.add("hidden"),3500)}
+function showConnectionWarning(message="Connect to GARLU before updating the device."){const el=$("connectionWarning");if(!el)return;el.textContent=message;el.classList.remove("hidden");clearTimeout(window.__garluConnectionWarningTimer);window.__garluConnectionWarningTimer=setTimeout(()=>el.classList.add("hidden"),5200)}
 function hideConnectionWarning(){const el=$("connectionWarning");if(el)el.classList.add("hidden")}
 
 function setConnected(label="GARLU connected",connected=true){
@@ -32,6 +32,7 @@ function setConnected(label="GARLU connected",connected=true){
 }
 function setDisconnected(red=false){
   isConnected=false;
+  if(red) demoMode=false;
   if(port&&port.close){try{port.close()}catch(e){}}
   port=null;
   const btn=$("connectBtn"),dot=$("statusDot");
@@ -44,6 +45,7 @@ function setDisconnected(red=false){
 }
 function toggleConnection(){
   if(isConnected){
+    demoMode=false;
     setDisconnected(true);
     toast("GARLU disconnected");
     return;
@@ -148,9 +150,41 @@ function getLocalTemplates(){try{return JSON.parse(localStorage.getItem("garluLo
 function saveLocalTemplates(items){localStorage.setItem("garluLocalTemplates",JSON.stringify(items))}
 function applyTemplatePages(pages,msg="Template applied"){updateConfigFromUi();config.pages=JSON.parse(JSON.stringify(pages));setValidationIssues(validateConfig(config));updateUiFromConfig();setOutputText(JSON.stringify(config,null,2));document.getElementById("assignments").scrollIntoView({behavior:"smooth",block:"start"});toast(msg)}
 function renderLocalTemplates(){const grid=$("templateGrid");if(!grid)return;grid.querySelectorAll(".template.local-template").forEach(x=>x.remove());getLocalTemplates().forEach((t,i)=>{const b=document.createElement("button");b.className="template local-template";b.dataset.localTemplate=String(i);b.innerHTML=`<strong>${t.name||"Local template"}</strong><span>${t.description||"Stored locally in this browser."}</span>`;b.onclick=()=>applyTemplatePages(t.pages,"Local template applied");grid.appendChild(b)})}
+
+async function saveEditedJsonFile() {
+  const raw = outputEl().value;
+  const valid = importConfigFromRawText(raw, "JSON changes");
+  if (!valid) return;
+
+  const filename = "garlu-config-edited.json";
+
+  try {
+    if ("showSaveFilePicker" in window) {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: "JSON file",
+          accept: { "application/json": [".json"] }
+        }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(new Blob([JSON.stringify(configForDevice(), null, 2)], { type: "application/json" }));
+      await writable.close();
+      toast("JSON file saved");
+      return;
+    }
+  } catch (error) {
+    if (error && error.name === "AbortError") return;
+  }
+
+  downloadJson(filename, configForDevice());
+  toast("JSON file downloaded");
+}
+
+
 function init(){
   const wc=$("welcomeConnectBtn"),cb=$("connectBtn"),db=$("demoBtn");if(wc)wc.onclick=connectDevice;if(cb)cb.onclick=toggleConnection;if(db)db.onclick=startDemoMode;
-  $("saveBtn").onclick=async()=>{if(!isConnected&&!demoMode){showConnectionWarning();toast("Connect to GARLU first");return}const payload=configForDevice();if(!payload){toast("Fix configuration issues first");return}if(demoMode){Object.assign(config,payload);setOutputText(JSON.stringify(config,null,2));toast("Demo configuration updated");return}if(!port){showConnectionWarning();return}await writeLine("SET_CONFIG "+JSON.stringify(payload));const res=await readLine();setOutputText(res);toast("GARLU updated")};
+  $("saveBtn").onclick=async()=>{if((!isConnected&&!demoMode)||$("connectBtn").classList.contains("disconnected")){showConnectionWarning("Connect to GARLU before updating the device.");toast("Connect to GARLU first");return}const payload=configForDevice();if(!payload){toast("Fix configuration issues first");return}if(demoMode){Object.assign(config,payload);setOutputText(JSON.stringify(config,null,2));toast("Demo configuration updated");return}if(!port){showConnectionWarning();return}await writeLine("SET_CONFIG "+JSON.stringify(payload));const res=await readLine();setOutputText(res);toast("GARLU updated")};
   document.querySelectorAll(".page").forEach(b=>b.onclick=()=>{updateConfigFromUi();document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPage=Number(b.dataset.page);updateUiFromConfig()});
   document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");if(b.dataset.scroll==="assignments"){window.scrollTo({top:0,behavior:"smooth"});return}document.getElementById(b.dataset.scroll).scrollIntoView({behavior:"smooth",block:"start"})});
   ["screenLayout","resolutionMode","oledBrightness","ringBrightness","cc0","cc1","cc2","cc3"].forEach(id=>$(id).addEventListener("change",()=>{updateConfigFromUi();updateUiFromConfig()}));
@@ -162,7 +196,7 @@ function init(){
   $("sampleBtn").onclick=()=>{downloadJson("garlu-config-example.json",sampleConfig());toast("Example downloaded")};
   $("importInput").addEventListener("click",e=>e.target.value="");
   $("importInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;const raw=await f.text();importConfigFromRawText(raw,"JSON");document.getElementById("assignments").scrollIntoView({behavior:"smooth",block:"start"});e.target.value=""};
-  $("applyJsonBtn").onclick=()=>importConfigFromRawText(outputEl().value,"JSON changes");
+  $("applyJsonBtn").onclick=saveEditedJsonFile;
   const jwc=$("jsonWarningsClose");if(jwc)jwc.onclick=()=>setJsonWarnings([]);
   initCustomSelects();renderLocalTemplates();updateUiFromConfig();setDisconnected(false);
 }
