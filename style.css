@@ -530,3 +530,112 @@ body:after {
     height: 150px;
   }
 }
+
+
+/* v2.19 refinements */
+.welcome {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(110,231,183,.16), transparent 24%),
+    radial-gradient(circle at 20% 78%, rgba(110,231,183,.10), transparent 22%),
+    linear-gradient(135deg, #040404 0%, #101010 50%, #050505 100%);
+}
+
+.welcome:before {
+  opacity: 1;
+  background:
+    linear-gradient(115deg, transparent 18%, rgba(110,231,183,.13) 42%, transparent 62%),
+    linear-gradient(35deg, transparent 22%, rgba(255,255,255,.07) 50%, transparent 70%);
+  animation: lightSweep 6.5s ease-in-out infinite alternate;
+}
+
+.welcome:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 90px, rgba(255,255,255,.025) 91px 92px),
+    repeating-linear-gradient(0deg, transparent 0 90px, rgba(255,255,255,.018) 91px 92px);
+  mask-image: radial-gradient(circle at center, black 0%, transparent 72%);
+  animation: gridPulse 4.8s ease-in-out infinite alternate;
+}
+
+@keyframes gridPulse {
+  from { opacity: .15; transform: scale(1); }
+  to { opacity: .42; transform: scale(1.025); }
+}
+
+.welcome-shell {
+  justify-items: center;
+  text-align: center;
+}
+
+.welcome-content {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.landing-brand {
+  justify-content: center;
+  justify-items: center;
+}
+
+.landing-logo {
+  text-align: center;
+}
+
+.welcome-content .welcome-actions {
+  justify-content: center;
+  width: 100%;
+}
+
+.segmented {
+  width: 100%;
+  grid-auto-columns: 1fr;
+}
+
+#resolutionSetting .segmented,
+.segmented-setting:has(#screenLayout) .segmented {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#resolutionSetting .segmented button,
+.segmented-setting:has(#screenLayout) .segmented button {
+  width: 100%;
+  min-width: 0;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.tour-overlay {
+  display: block;
+}
+
+.tour-overlay.hidden {
+  display: none !important;
+}
+
+.tour-spotlight {
+  z-index: 51;
+  background: rgba(110,231,183,.035);
+}
+
+.tour-card {
+  z-index: 52;
+}
+
+.tour-target-active {
+  position: relative;
+  z-index: 53 !important;
+  outline: 2px solid var(--accent);
+  outline-offset: 8px;
+  border-radius: 8px;
+}
+
+@media(max-width:760px) {
+  .landing-brand {
+    gap: 24px;
+  }
+}

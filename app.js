@@ -38,18 +38,19 @@ function saveLocalTemplates(items){localStorage.setItem("garluLocalTemplates",JS
 function applyTemplatePages(pages,msg="Template applied"){updateConfigFromUi();config.pages=JSON.parse(JSON.stringify(pages));setValidationIssues(validateConfig(config));updateUiFromConfig();setOutputText(JSON.stringify(config,null,2));document.getElementById("assignments").scrollIntoView({behavior:"smooth",block:"start"});toast(msg)}
 function renderLocalTemplates(){const grid=$("templateGrid");if(!grid)return;grid.querySelectorAll(".template.local-template").forEach(x=>x.remove());getLocalTemplates().forEach((t,i)=>{const b=document.createElement("button");b.className="template local-template";b.dataset.localTemplate=String(i);b.innerHTML=`<strong>${t.name||"Local template"}</strong><span>${t.description||"Stored locally in this browser."}</span>`;b.onclick=()=>applyTemplatePages(t.pages,"Local template applied");grid.appendChild(b)})}
 
+
 const tourSteps = [
   {
     selector: "#connectBtn",
     label: "STEP 1",
     title: "Connect to GARLU",
-    text: "Connect the device. The configurator will auto-read the current setup."
+    text: "Connect the device. The configurator will auto-read its current setup."
   },
   {
     selector: "#assignments",
     label: "STEP 2",
     title: "Edit the CC values",
-    text: "Select a page and assign MIDI CC numbers to Fader 1–4."
+    text: "Select a page and assign MIDI CC numbers to each fader."
   },
   {
     selector: "#templates",
@@ -60,8 +61,8 @@ const tourSteps = [
   {
     selector: "#backup",
     label: "OPTIONAL",
-    title: "Import or export JSON",
-    text: "Back up your configuration or edit advanced settings with JSON."
+    title: "Import / Export JSON",
+    text: "Back up your configuration, import another setup, or edit JSON directly."
   },
   {
     selector: "#saveBtn",
@@ -73,50 +74,67 @@ const tourSteps = [
 
 let currentTourStep = 0;
 
+function clearTourTarget() {
+  document.querySelectorAll(".tour-target-active").forEach((el) => {
+    el.classList.remove("tour-target-active");
+  });
+}
+
+function getTourTarget() {
+  const step = tourSteps[currentTourStep];
+  return document.querySelector(step.selector);
+}
+
 function placeTourStep() {
   const overlay = $("tourOverlay");
   const spot = $("tourSpotlight");
   const card = $("tourCard");
-  if (!overlay || !spot || !card) return;
-
   const step = tourSteps[currentTourStep];
-  const target = document.querySelector(step.selector);
-  if (!target) return;
+  const target = getTourTarget();
 
-  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (!overlay || !spot || !card || !target) return;
+
+  clearTourTarget();
+  target.classList.add("tour-target-active");
+
+  $("tourStepLabel").textContent = step.label;
+  $("tourTitle").textContent = step.title;
+  $("tourText").textContent = step.text;
+  $("tourNextBtn").textContent = currentTourStep === tourSteps.length - 1 ? "Finish" : "Next";
+
+  target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
 
   setTimeout(() => {
     const rect = target.getBoundingClientRect();
-    const pad = 10;
+    const pad = 12;
 
     spot.style.left = `${Math.max(8, rect.left - pad)}px`;
     spot.style.top = `${Math.max(8, rect.top - pad)}px`;
     spot.style.width = `${Math.min(window.innerWidth - 16, rect.width + pad * 2)}px`;
     spot.style.height = `${Math.min(window.innerHeight - 16, rect.height + pad * 2)}px`;
 
-    $("tourStepLabel").textContent = step.label;
-    $("tourTitle").textContent = step.title;
-    $("tourText").textContent = step.text;
-    $("tourNextBtn").textContent = currentTourStep === tourSteps.length - 1 ? "Finish" : "Next";
+    const cardWidth = Math.min(380, window.innerWidth - 32);
+    const cardHeight = 220;
 
-    const cardWidth = Math.min(360, window.innerWidth - 32);
-    let left = rect.right + 22;
+    let left = rect.right + 24;
     let top = rect.top;
 
     if (left + cardWidth > window.innerWidth - 16) {
-      left = Math.max(16, rect.left - cardWidth - 22);
+      left = rect.left - cardWidth - 24;
     }
 
     if (left < 16) {
       left = 16;
-      top = Math.min(window.innerHeight - 220, rect.bottom + 18);
+      top = rect.bottom + 22;
     }
 
-    top = Math.max(16, Math.min(top, window.innerHeight - 240));
+    if (top + cardHeight > window.innerHeight - 16) {
+      top = Math.max(16, window.innerHeight - cardHeight - 16);
+    }
 
     card.style.left = `${left}px`;
     card.style.top = `${top}px`;
-  }, 280);
+  }, 420);
 }
 
 function startTutorialMode() {
@@ -129,11 +147,13 @@ function startTutorialMode() {
   updateUiFromConfig();
 
   currentTourStep = 0;
-  $("tourOverlay").classList.remove("hidden");
+  const overlay = $("tourOverlay");
+  if (overlay) overlay.classList.remove("hidden");
   placeTourStep();
 }
 
 function closeTour() {
+  clearTourTarget();
   const overlay = $("tourOverlay");
   if (overlay) overlay.classList.add("hidden");
 }
@@ -143,6 +163,7 @@ function nextTourStep() {
     closeTour();
     return;
   }
+
   currentTourStep += 1;
   placeTourStep();
 }
@@ -151,7 +172,6 @@ window.addEventListener("resize", () => {
   const overlay = $("tourOverlay");
   if (overlay && !overlay.classList.contains("hidden")) placeTourStep();
 });
-
 
 function init(){const wc=$("welcomeConnectBtn"),cb=$("connectBtn"),db=$("demoBtn");if(wc)wc.onclick=connectDevice;if(cb)cb.onclick=connectDevice;if(db)db.onclick=startDemoMode;const tb=$("tutorialBtn");if(tb)tb.onclick=startTutorialMode;const tn=$("tourNextBtn"),ts=$("tourSkipBtn");if(tn)tn.onclick=nextTourStep;if(ts)ts.onclick=closeTour;$("saveBtn").onclick=async()=>{const payload=configForDevice();if(!payload){toast("Fix configuration issues first");return}if(demoMode){Object.assign(config,payload);setOutputText(JSON.stringify(config,null,2));toast("Demo configuration updated");return}if(!port)return alert("Connect GARLU first.");await writeLine("SET_CONFIG "+JSON.stringify(payload));const res=await readLine();setOutputText(res);toast("GARLU configured")};document.querySelectorAll(".page").forEach(b=>b.onclick=()=>{updateConfigFromUi();document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentPage=Number(b.dataset.page);updateUiFromConfig()});document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");if(b.dataset.scroll==="assignments"){window.scrollTo({top:0,behavior:"smooth"});return}document.getElementById(b.dataset.scroll).scrollIntoView({behavior:"smooth",block:"start"})});["screenLayout","resolutionMode","oledBrightness","ringBrightness","cc0","cc1","cc2","cc3"].forEach(id=>$(id).addEventListener("change",()=>{updateConfigFromUi();updateUiFromConfig()}));document.querySelectorAll(".segmented").forEach(g=>g.querySelectorAll("button").forEach(b=>b.onclick=()=>{const t=$(g.dataset.target);if(!t)return;t.value=b.dataset.value;t.dispatchEvent(new Event("change",{bubbles:true}));syncSegmentedControls()}));document.querySelectorAll(".template").forEach(b=>b.onclick=()=>applyTemplatePages(templates[b.dataset.template].pages,"Template applied"));$("templateInput").addEventListener("click",e=>e.target.value="");$("templateInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;const raw=await f.text();try{const p=JSON.parse(raw),candidate={device:p.device||"GARLU_FADER_MINI",screenLayout:p.screenLayout||"standard",highResolution:Boolean(p.highResolution),oledBrightness:p.oledBrightness||"medium",ringBrightness:p.ringBrightness||"medium",pages:p.pages},issues=validateConfig(candidate);if(issues.length){setJsonWarnings(issues.map(i=>i.message));setOutputText(raw,true);toast("Template has validation issues");return}const items=getLocalTemplates();items.push({name:p.name||f.name.replace(/\.json$/i,""),description:p.description||"Local user template",pages:p.pages});saveLocalTemplates(items);renderLocalTemplates();setOutputText(JSON.stringify(p,null,2));toast("Local template added")}catch{setJsonWarnings(["Invalid JSON syntax. Check commas, quotes and boolean values."]);setOutputText(raw,true);toast("Invalid template JSON")}finally{e.target.value=""}};$("exportBtn").onclick=()=>{const payload=configForDevice();if(!payload){toast("Fix configuration issues before export");return}downloadJson("garlu-config.json",payload);toast("JSON exported")};$("sampleBtn").onclick=()=>{downloadJson("garlu-config-example.json",sampleConfig());toast("Example downloaded")};$("importInput").addEventListener("click",e=>e.target.value="");$("importInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;const raw=await f.text();importConfigFromRawText(raw,"JSON");document.getElementById("assignments").scrollIntoView({behavior:"smooth",block:"start"});e.target.value=""};$("applyJsonBtn").onclick=()=>importConfigFromRawText(output.value,"JSON changes");renderLocalTemplates();updateUiFromConfig();setDisconnected()}
 document.addEventListener("DOMContentLoaded",init);
