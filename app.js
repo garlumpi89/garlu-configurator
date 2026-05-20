@@ -32,18 +32,23 @@ function setConnected(label="GARLU connected",connected=true){
   const pill=document.querySelector(".device-pill");if(pill)pill.classList.remove("disconnected-compact");updateDeviceLabels();
   if(connected)hideConnectionWarning();
 }
-function setDisconnected(red=false){
+function setDisconnected(red=false,idle=false){
   isConnected=false;
   if(red) demoMode=false;
   if(port&&port.close){try{port.close()}catch(e){}}
   port=null;
   const btn=$("connectBtn"),dot=$("statusDot");
-  $("connectionStatus").textContent=red?"GARLU disconnected":"Not connected";
+  $("connectionStatus").textContent=idle?"GARLU FADER":(red?"GARLU disconnected":"Not connected");
   dot.classList.remove("connected");
   dot.classList.toggle("disconnected",red);
   btn.classList.remove("connected");
   btn.classList.toggle("disconnected",red);
-  btn.textContent=red?"GARLU disconnected":"Connect to GARLU";const pill=document.querySelector(".device-pill");if(pill)pill.classList.toggle("disconnected-compact",red);
+  btn.textContent=red?"GARLU disconnected":"Connect to GARLU";
+const pill=document.querySelector(".device-pill");
+if(pill){
+  pill.classList.toggle("disconnected-compact",red);
+  pill.classList.toggle("idle-state",idle);
+}
 }
 function toggleConnection(){
   if(isConnected){
@@ -110,8 +115,22 @@ function initCustomSelects(){
   });
   document.addEventListener("click",()=>document.querySelectorAll(".custom-select.open").forEach(w=>w.classList.remove("open")));
 }
-function updateOledSlider(){const s=$("oledBrightness"),v=$("oledBrightnessValue");if(!s)return;const val=normalizeOled(config.oledBrightness);s.value=val;s.style.setProperty("--ring-fill",`${val}%`);if(v)v.textContent=`${val}%`}
-function updateRingSlider(){const s=$("ringBrightness"),v=$("ringBrightnessValue");if(!s)return;const val=normalizeRing(config.ringBrightness);s.value=val;s.style.setProperty("--ring-fill",`${val}%`);if(v)v.textContent=`${val}%`}
+function updateOledSlider(){
+  const s=$("oledBrightness"),v=$("oledBrightnessValue");
+  if(!s)return;
+  const val=normalizeOled(config.oledBrightness);
+  s.value=val;
+  s.style.setProperty("--ring-fill",`${val}%`);
+  if(v)v.textContent=`${val}%`;
+}%`);if(v)v.textContent=`${val}%`}
+function updateRingSlider(){
+  const s=$("ringBrightness"),v=$("ringBrightnessValue");
+  if(!s)return;
+  const val=normalizeRing(config.ringBrightness);
+  s.value=val;
+  s.style.setProperty("--ring-fill",`${val}%`);
+  if(v)v.textContent=`${val}%`;
+}%`);if(v)v.textContent=`${val}%`}
 function updateUiFromConfig(){
   $("screenLayout").value=["standard","performance"].includes(config.screenLayout)?config.screenLayout:"standard";
   $("resolutionMode").value=config.highResolution===true?"enhanced":"midi1";
@@ -137,7 +156,7 @@ async function readLine(){const r=port.readable.getReader();let text="";while(tr
 async function readDeviceConfig(){await writeLine("GET_CONFIG");const response=await readLine();setOutputText(response);Object.assign(config,JSON.parse(response));setValidationIssues(validateConfig(config));updateUiFromConfig()}
 function connectAsTestMode(msg="GARLU connected"){demoMode=true;showApp();config.device="GARLU_FADER_MINI";config.fw=config.fw||"demo";setConnected("GARLU connected",true);updateUiFromConfig();toast(msg)}
 async function connectDevice(){if(!("serial"in navigator)){connectAsTestMode("Test connection active");return}try{port=await navigator.serial.requestPort();await port.open({baudRate:115200});demoMode=false;showApp();$("connectBtn").classList.remove("connected","disconnected");$("connectBtn").textContent="Reading GARLU...";toast("Reading device configuration...");await Promise.race([readDeviceConfig(),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),1200))]);setConnected("GARLU connected",true);toast(`${deviceDisplayName(config.device)} connected`)}catch(e){connectAsTestMode("GARLU connected in test mode")}}
-function startDemoMode(){demoMode=true;showApp();config.device="GARLU_FADER_MINI";config.fw="demo";setDisconnected(false);$("connectionStatus").textContent="Demo mode";updateUiFromConfig();toast("Demo mode active")}
+function startDemoMode(){demoMode=true;showApp();config.device="GARLU_FADER_MINI";config.fw="demo";setDisconnected(false);$("connectionStatus").textContent="GARLU FADER";document.querySelector(".device-pill")?.classList.add("idle-state");updateUiFromConfig();toast("Demo mode active")}
 function importConfigFromRawText(rawText,label="JSON"){
   suppressTopValidation=true;
   try{
@@ -151,7 +170,7 @@ function importConfigFromRawText(rawText,label="JSON"){
 }
 function getLocalTemplates(){try{return JSON.parse(localStorage.getItem("garluLocalTemplates")||"[]")}catch{return[]}}
 function saveLocalTemplates(items){localStorage.setItem("garluLocalTemplates",JSON.stringify(items))}
-function applyTemplatePages(pages,msg="Template applied"){updateConfigFromUi();config.pages=JSON.parse(JSON.stringify(pages));setValidationIssues(validateConfig(config));updateUiFromConfig();setOutputText(JSON.stringify(config,null,2));document.getElementById("assignments").scrollIntoView({behavior:"smooth",block:"start"});toast(msg)}
+function applyTemplatePages(pages,msg="Template applied"){updateConfigFromUi();config.pages=JSON.parse(JSON.stringify(pages));setValidationIssues(validateConfig(config));updateUiFromConfig();setOutputText(JSON.stringify(config,null,2));toast(msg)}
 function renderLocalTemplates(){const grid=$("templateGrid");if(!grid)return;grid.querySelectorAll(".template.local-template").forEach(x=>x.remove());getLocalTemplates().forEach((t,i)=>{const b=document.createElement("button");b.className="template local-template";b.dataset.localTemplate=String(i);b.innerHTML=`<strong>${t.name||"Local template"}</strong><span>${t.description||"Stored locally in this browser."}</span>`;b.onclick=()=>applyTemplatePages(t.pages,"Local template applied");grid.appendChild(b)})}
 
 async function saveEditedJsonFile() {
@@ -198,9 +217,9 @@ function init(){
   $("exportBtn").onclick=()=>{const payload=configForDevice();if(!payload){toast("Fix configuration issues before export");return}downloadJson("garlu-config.json",payload);toast("JSON exported")};
   $("sampleBtn").onclick=()=>{downloadJson("garlu-config-example.json",sampleConfig());toast("Example downloaded")};
   $("importInput").addEventListener("click",e=>e.target.value="");
-  $("importInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;const raw=await f.text();importConfigFromRawText(raw,"JSON");document.getElementById("assignments").scrollIntoView({behavior:"smooth",block:"start"});e.target.value=""};
+  $("importInput").onchange=async e=>{const f=e.target.files[0];if(!f)return;const raw=await f.text();importConfigFromRawText(raw,"JSON");e.target.value=""};
   $("applyJsonBtn").onclick=saveEditedJsonFile;
   const jwc=$("jsonWarningsClose");if(jwc)jwc.onclick=()=>setJsonWarnings([]);
-  initCustomSelects();renderLocalTemplates();updateUiFromConfig();setDisconnected(false);
+  initCustomSelects();renderLocalTemplates();updateUiFromConfig();setDisconnected(false,true);
 }
 document.addEventListener("DOMContentLoaded",init);

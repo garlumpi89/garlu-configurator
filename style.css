@@ -1131,3 +1131,48 @@ body:after {
     justify-content: flex-start;
   }
 }
+
+
+/* v2.25 fixes */
+#output {
+  resize: none !important;
+  overflow: auto;
+}
+
+.dashboard-brand {
+  grid-template-columns: auto 1fr;
+}
+
+.dashboard-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-logo div:nth-child(1),
+.dashboard-logo div:nth-child(2) {
+  width: 100%;
+  text-align: center;
+}
+
+.dashboard-logo div:nth-child(2) {
+  margin-top: 8px;
+}
+
+.device-pill.idle-state #deviceInfo {
+  display: none !important;
+}
+
+.device-pill.idle-state .status-dot {
+  background: rgba(255,255,255,.24) !important;
+  box-shadow: none !important;
+}
+
+.device-pill.idle-state #connectionStatus {
+  color: rgba(255,255,255,.82);
+}
+
+.range-slider {
+  --ring-fill: 70%;
+}
