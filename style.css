@@ -358,3 +358,175 @@ pre#output {
     justify-content: center;
   }
 }
+
+
+/* v2.18 landing logo, animated dashboard lights, visual tutorial, segmented settings */
+body:after {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(110,231,183,.10), transparent 22%),
+    radial-gradient(circle at 82% 18%, rgba(255,255,255,.055), transparent 20%),
+    linear-gradient(120deg, transparent 30%, rgba(110,231,183,.04) 48%, transparent 62%);
+  animation: dashboardLights 11s ease-in-out infinite alternate;
+}
+
+@keyframes dashboardLights {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); opacity: .55; }
+  to { transform: translate3d(2%, 1%, 0) scale(1.05); opacity: .95; }
+}
+
+.landing-brand {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: clamp(28px, 4vw, 56px);
+}
+
+.landing-logo {
+  text-align: left;
+}
+
+.landing-logo div:nth-child(3) {
+  margin-top: clamp(10px, 1.3vw, 16px);
+  font-size: .28em;
+  letter-spacing: .34em;
+  color: #d7d7d7;
+}
+
+.landing-fader-mark {
+  display: grid;
+  grid-template-columns: repeat(3, 24px);
+  gap: clamp(18px, 2.2vw, 28px);
+  height: clamp(150px, 20vw, 210px);
+  align-items: stretch;
+  filter: drop-shadow(0 0 13px rgba(255,255,255,.24));
+}
+
+.landing-fader-mark i {
+  position: relative;
+  display: block;
+}
+
+.landing-fader-mark i:before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.72));
+}
+
+.landing-fader-mark i:after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 26px;
+  height: 36px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #fff, #d7d7d7);
+  border-radius: 1px;
+  box-shadow: 0 0 16px rgba(255,255,255,.22);
+}
+
+.landing-fader-mark i:nth-child(1):after { top: 54%; }
+.landing-fader-mark i:nth-child(2):after { top: 24%; }
+.landing-fader-mark i:nth-child(3):after { top: 46%; }
+
+.welcome-shell {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+}
+
+.welcome-fader-art {
+  display: none;
+}
+
+.welcome-content .welcome-actions {
+  justify-content: center;
+}
+
+.segmented-setting#resolutionSetting.invalid .segmented {
+  border-color: rgba(255,107,107,.65);
+}
+
+.segmented-setting#resolutionSetting small.invalid-text {
+  color: #ff9b9b;
+}
+
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0,0,0,.58);
+  pointer-events: auto;
+}
+
+.tour-spotlight {
+  position: fixed;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 9999px rgba(0,0,0,.62),
+    0 0 28px rgba(110,231,183,.45);
+  transition: all .28s ease;
+  pointer-events: none;
+}
+
+.tour-card {
+  position: fixed;
+  width: min(360px, calc(100vw - 32px));
+  border: 1px solid rgba(110,231,183,.42);
+  border-radius: 10px;
+  padding: 18px;
+  background: #111;
+  box-shadow: 0 24px 80px rgba(0,0,0,.65);
+  transition: all .28s ease;
+}
+
+.tour-card h3 {
+  margin: 0 0 8px;
+  color: #fff;
+}
+
+.tour-card p {
+  margin: 0;
+  color: #aaa;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.tour-step {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  margin-bottom: 9px;
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media(max-width:760px) {
+  .landing-brand {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .landing-logo {
+    text-align: center;
+  }
+  .landing-fader-mark {
+    height: 150px;
+  }
+}
