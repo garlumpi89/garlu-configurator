@@ -148,6 +148,7 @@ function setValidationIssues(issues) {
   }
 
   updateValidationHighlights();
+  if (typeof syncSegmentedControls === "function") syncSegmentedControls();
 }
 
 function updateValidationHighlights() {
@@ -543,5 +544,31 @@ $("importInput").onchange = async (event) => {
   }
 };
 
+
+function syncSegmentedControls() {
+  document.querySelectorAll(".segmented").forEach((group) => {
+    const target = $(group.dataset.target);
+    if (!target) return;
+
+    group.querySelectorAll("button").forEach((button) => {
+      button.classList.toggle("active", button.dataset.value === target.value);
+    });
+  });
+}
+
+document.querySelectorAll(".segmented").forEach((group) => {
+  group.querySelectorAll("button").forEach((button) => {
+    button.onclick = () => {
+      const target = $(group.dataset.target);
+      if (!target) return;
+
+      target.value = button.dataset.value;
+      target.dispatchEvent(new Event("change", { bubbles: true }));
+      syncSegmentedControls();
+    };
+  });
+});
+
 renderLocalTemplates();
 updateUiFromConfig();
+syncSegmentedControls();
