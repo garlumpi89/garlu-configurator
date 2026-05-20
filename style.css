@@ -1176,3 +1176,13 @@ body:after {
 .range-slider {
   --ring-fill: 70%;
 }
+
+
+/* v2.27 landing start flow */
+.welcome-actions.single-action {
+  justify-content: center;
+}
+
+.welcome-actions.single-action .button {
+  min-width: 180px;
+}

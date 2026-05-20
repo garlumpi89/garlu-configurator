@@ -113,7 +113,7 @@ function toggleConnection(){
     toast("GARLU disconnected");
     return;
   }
-  connectDevice();
+  connectDashboardTestMode();
 }
 
 function outputEl(){return $("output");}
@@ -571,17 +571,37 @@ function toggleConnection(){
     toast("GARLU disconnected");
     return;
   }
-  connectDevice();
+  connectDashboardTestMode();
+}
+
+function startDashboard(){
+  showApp();
+  demoMode=true;
+  isConnected=false;
+  config.device="GARLU_FADER_MINI";
+  config.fw="demo";
+  setDisconnected(false,true);
+  $("connectionStatus").textContent="GARLU FADER";
+  updateUiFromConfig();
+  toast("Dashboard ready");
+}
+
+function connectDashboardTestMode(){
+  demoMode=true;
+  showApp();
+  config.device="GARLU_FADER_MINI";
+  config.fw="demo";
+  setConnected("GARLU connected",true);
+  updateUiFromConfig();
+  toast("GARLU connected in test mode");
 }
 
 function init(){
-  const welcomeConnect=$("welcomeConnectBtn");
+  const start=$("startBtn");
   const connect=$("connectBtn");
-  const demo=$("demoBtn");
 
-  if(welcomeConnect)welcomeConnect.onclick=connectDevice;
+  if(start)start.onclick=startDashboard;
   if(connect)connect.onclick=toggleConnection;
-  if(demo)demo.onclick=startDemoMode;
 
   $("saveBtn").onclick=async()=>{
     if((!isConnected&&!demoMode)||$("connectBtn").classList.contains("disconnected")){
