@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=2.11" />
+  <link rel="stylesheet" href="./style.css?v=2.12" />
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -146,7 +146,10 @@
             <p>Apply a starting point while keeping the current CC page visible above.</p>
           </div>
         </div>
-        <div class="template-grid">
+        <div class="template-actions">
+          <label class="button ghost backup-button">Add local template<input id="templateInput" type="file" accept="application/json,.json" /></label>
+        </div>
+        <div class="template-grid" id="templateGrid">
           <button class="template" data-template="default"><strong>Default</strong><span>Expression, modulation, volume and utility CCs.</span></button>
           <button class="template" data-template="ableton"><strong>Ableton Mixer</strong><span>Volume, sends, pan and device macros.</span></button>
           <button class="template" data-template="synth"><strong>Synth Control</strong><span>Filter, resonance, envelope and modulation.</span></button>
@@ -173,6 +176,6 @@
   </main>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="./app.js?v=2.11"></script>
+  <script src="./app.js?v=2.12"></script>
 </body>
 </html>

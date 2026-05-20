@@ -23,6 +23,43 @@ const config = {
 const $ = (id) => document.getElementById(id);
 const output = $("output");
 
+function escapeHTML(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function setOutputText(text, isError = false) {
+  output.classList.toggle("output-error", isError);
+  output.textContent = text;
+}
+
+function setOutputHTML(html, isError = false) {
+  output.classList.toggle("output-error", isError);
+  output.innerHTML = html;
+}
+
+function highlightJsonIssues(rawText, issues) {
+  let escaped = escapeHTML(rawText);
+
+  issues.forEach((issue) => {
+    if (issue.type === "cc" && issue.value !== undefined) {
+      const rawValue = JSON.stringify(issue.value);
+      const safeValue = escapeHTML(rawValue);
+      escaped = escaped.replace(safeValue, `<span class="json-error-highlight">${safeValue}</span>`);
+    }
+
+    if (issue.field) {
+      const safeField = escapeHTML(`"${issue.field}"`);
+      escaped = escaped.replace(safeField, `<span class="json-error-highlight">${safeField}</span>`);
+    }
+  });
+
+  const issueList = issues.map((issue) => `• ${escapeHTML(issue.message)}`).join("\n");
+  return `<span class="output-issues">${issueList}</span>${escaped}`;
+}
+
 function toast(message) {
   const el = $("toast");
   el.textContent = message;
@@ -236,7 +273,7 @@ async function readLine() {
 async function readDeviceConfig() {
   await writeLine("GET_CONFIG");
   const response = await readLine();
-  output.textContent = response;
+  setOutputText(response);
   const parsed = JSON.parse(response);
   Object.assign(config, parsed);
   setValidationIssues(validateConfig(config));
@@ -306,7 +343,7 @@ $("saveBtn").onclick = async () => {
 
   if (demoMode) {
     Object.assign(config, payload);
-    output.textContent = JSON.stringify(config, null, 2);
+    setOutputText(JSON.stringify(config, null, 2));
     toast("Demo configuration updated");
     return;
   }
@@ -314,7 +351,7 @@ $("saveBtn").onclick = async () => {
   if (!port) return alert("Connect GARLU first.");
   await writeLine("SET_CONFIG " + JSON.stringify(payload));
   const response = await readLine();
-  output.textContent = response;
+  setOutputText(response);
   toast("GARLU configured");
 };
 
@@ -349,17 +386,98 @@ document.querySelectorAll(".nav").forEach((button) => {
   });
 });
 
+
+function getLocalTemplates() {
+  try {
+    return JSON.parse(localStorage.getItem("garluLocalTemplates") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalTemplates(items) {
+  localStorage.setItem("garluLocalTemplates", JSON.stringify(items));
+}
+
+function renderLocalTemplates() {
+  const grid = $("templateGrid");
+  if (!grid) return;
+
+  grid.querySelectorAll(".template.local-template").forEach((item) => item.remove());
+
+  getLocalTemplates().forEach((template, index) => {
+    const button = document.createElement("button");
+    button.className = "template local-template";
+    button.dataset.localTemplate = String(index);
+    button.innerHTML = `<strong>${escapeHTML(template.name || "Local template")}</strong><span>${escapeHTML(template.description || "Stored locally in this browser.")}</span>`;
+    button.onclick = () => applyTemplatePages(template.pages, "Local template applied");
+    grid.appendChild(button);
+  });
+}
+
+function applyTemplatePages(pages, message = "Template applied") {
+  updateConfigFromUi();
+  config.pages = JSON.parse(JSON.stringify(pages));
+  setValidationIssues(validateConfig(config));
+  updateUiFromConfig();
+  setOutputText(JSON.stringify(config, null, 2));
+  document.getElementById("assignments").scrollIntoView({ behavior: "smooth", block: "start" });
+  toast(message);
+}
+
 document.querySelectorAll(".template").forEach((button) => {
   button.onclick = () => {
-    updateConfigFromUi();
-    config.pages = JSON.parse(JSON.stringify(templates[button.dataset.template].pages));
-    setValidationIssues(validateConfig(config));
-    updateUiFromConfig();
-    output.textContent = JSON.stringify(config, null, 2);
-    document.getElementById("assignments").scrollIntoView({ behavior: "smooth", block: "start" });
-    toast("Template applied");
+    applyTemplatePages(templates[button.dataset.template].pages, "Template applied");
   };
 });
+
+
+$("templateInput").addEventListener("click", (event) => {
+  event.target.value = "";
+});
+
+$("templateInput").onchange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const rawText = await file.text();
+
+  try {
+    const parsed = JSON.parse(rawText);
+    const candidate = {
+      device: parsed.device || "GARLU_FADER_MINI",
+      screenLayout: parsed.screenLayout || "standard",
+      highResolution: Boolean(parsed.highResolution),
+      oledBrightness: parsed.oledBrightness || "medium",
+      ringBrightness: parsed.ringBrightness || "medium",
+      pages: parsed.pages
+    };
+
+    const issues = validateConfig(candidate);
+    if (issues.length) {
+      setOutputHTML(highlightJsonIssues(rawText, issues), true);
+      toast("Template has validation issues");
+      return;
+    }
+
+    const localTemplates = getLocalTemplates();
+    localTemplates.push({
+      name: parsed.name || file.name.replace(/\\.json$/i, ""),
+      description: parsed.description || "Local user template",
+      pages: parsed.pages
+    });
+
+    saveLocalTemplates(localTemplates);
+    renderLocalTemplates();
+    setOutputText(JSON.stringify(parsed, null, 2));
+    toast("Local template added");
+  } catch (error) {
+    setOutputHTML(`<span class="output-issues">• Invalid JSON syntax. Check commas, quotes and boolean values.</span>${escapeHTML(rawText)}`, true);
+    toast("Invalid template JSON");
+  } finally {
+    event.target.value = "";
+  }
+};
 
 $("exportBtn").onclick = () => {
   const payload = configForDevice();
@@ -384,8 +502,10 @@ $("importInput").onchange = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
+  const rawText = await file.text();
+
   try {
-    const parsed = JSON.parse(await file.text());
+    const parsed = JSON.parse(rawText);
     if (!parsed.pages || parsed.pages.length !== 4) throw new Error("Invalid pages");
 
     config.device = parsed.device || "GARLU_FADER_MINI";
@@ -403,16 +523,25 @@ $("importInput").onchange = async (event) => {
     const issues = validateConfig(config);
     setValidationIssues(issues);
     updateUiFromConfig();
-    output.textContent = JSON.stringify(config, null, 2);
+
+    if (issues.length) {
+      setOutputHTML(highlightJsonIssues(rawText, issues), true);
+    } else {
+      setOutputText(JSON.stringify(config, null, 2));
+    }
+
     document.getElementById("assignments").scrollIntoView({ behavior: "smooth", block: "start" });
 
     toast(issues.length ? "Imported with warnings" : "JSON imported");
   } catch {
-    setValidationIssues([{ type: "structure", message: "Invalid JSON syntax or GARLU structure. Check commas, quotes and boolean values." }]);
-    alert("Invalid JSON. Example: highResolution must be true or false, not fal.");
+    const issues = [{ type: "structure", message: "Invalid JSON syntax or GARLU structure. Check commas, quotes and boolean values." }];
+    setValidationIssues(issues);
+    setOutputHTML(`<span class="output-issues">• ${escapeHTML(issues[0].message)}</span>${escapeHTML(rawText)}`, true);
+    toast("Invalid JSON");
   } finally {
     event.target.value = "";
   }
 };
 
+renderLocalTemplates();
 updateUiFromConfig();
