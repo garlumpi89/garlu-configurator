@@ -810,3 +810,102 @@ body:after {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* v2.22 landing animation + disconnect state + editor repair */
+.welcome {
+  isolation: isolate;
+}
+
+.welcome:before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 18% 25%, rgba(110,231,183,.18), transparent 22%),
+    radial-gradient(circle at 82% 18%, rgba(255,255,255,.10), transparent 18%),
+    linear-gradient(115deg, transparent 22%, rgba(110,231,183,.16) 44%, transparent 64%);
+  animation: garluAurora 7s ease-in-out infinite alternate;
+  filter: blur(18px);
+}
+
+.welcome:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(110deg, transparent 0%, rgba(255,255,255,.08) 45%, transparent 65%),
+    repeating-linear-gradient(90deg, transparent 0 110px, rgba(110,231,183,.055) 111px 112px),
+    repeating-linear-gradient(0deg, transparent 0 110px, rgba(255,255,255,.03) 111px 112px);
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(circle at center, black 0%, transparent 78%);
+  animation: garluSweep 5.5s ease-in-out infinite;
+}
+
+@keyframes garluAurora {
+  0% { transform: translate3d(-4%, -2%, 0) rotate(-2deg) scale(1); opacity: .55; }
+  50% { transform: translate3d(2%, 2%, 0) rotate(2deg) scale(1.07); opacity: .95; }
+  100% { transform: translate3d(4%, -1%, 0) rotate(4deg) scale(1.02); opacity: .70; }
+}
+
+@keyframes garluSweep {
+  0% { transform: translateX(-18%) skewX(-8deg); opacity: .18; }
+  45% { opacity: .52; }
+  100% { transform: translateX(18%) skewX(-8deg); opacity: .26; }
+}
+
+.welcome-shell {
+  box-shadow:
+    0 30px 120px rgba(0,0,0,.62),
+    inset 0 0 0 1px rgba(110,231,183,.035),
+    0 0 80px rgba(110,231,183,.06);
+}
+
+.button.disconnected {
+  color: #ffd7d7;
+  border-color: rgba(255,107,107,.50);
+  background: rgba(255,107,107,.075);
+}
+
+.button.disconnected:before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff6b6b;
+  box-shadow: 0 0 12px rgba(255,107,107,.65);
+}
+
+.status-dot.disconnected {
+  background: #ff6b6b !important;
+  box-shadow: 0 0 12px rgba(255,107,107,.65);
+}
+
+.connection-warning {
+  width: 100%;
+  max-width: 360px;
+  border: 1px solid rgba(255,107,107,.48);
+  border-radius: 6px;
+  background: rgba(255,107,107,.08);
+  color: #ffb4b4;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  order: 5;
+}
+
+#output {
+  pointer-events: auto;
+  user-select: text;
+  cursor: text;
+  min-height: 180px;
+}
+
+#output:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(110,231,183,.18);
+}
