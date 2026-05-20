@@ -243,27 +243,40 @@ async function readDeviceConfig() {
   updateUiFromConfig();
 }
 
+function connectAsTestMode(message = "GARLU connected") {
+  demoMode = true;
+  showApp();
+  config.device = config.device || "GARLU_FADER_MINI";
+  config.fw = config.fw || "demo";
+  setConnected("GARLU connected", true);
+  updateUiFromConfig();
+  toast(message);
+}
+
 async function connectDevice() {
   if (!("serial" in navigator)) {
-    alert("Web Serial is not supported. Use Chrome or Edge desktop.");
+    connectAsTestMode("Test connection active");
     return;
   }
 
-  port = await navigator.serial.requestPort();
-  await port.open({ baudRate: 115200 });
-  demoMode = false;
-  showApp();
-  $("connectBtn").classList.remove("connected");
-  $("connectBtn").textContent = "Reading GARLU...";
-  toast("Reading device configuration...");
-
   try {
-    await readDeviceConfig();
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    demoMode = false;
+    showApp();
+    $("connectBtn").classList.remove("connected");
+    $("connectBtn").textContent = "Reading GARLU...";
+    toast("Reading device configuration...");
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Read timeout")), 1200)
+    );
+
+    await Promise.race([readDeviceConfig(), timeout]);
     setConnected("GARLU connected", true);
     toast(`${deviceDisplayName(config.device)} connected`);
   } catch (error) {
-    setConnected("GARLU connected", true);
-    toast("Connected, but config read failed");
+    connectAsTestMode("GARLU connected in test mode");
   }
 }
 
@@ -319,6 +332,12 @@ document.querySelectorAll(".nav").forEach((button) => {
   button.onclick = () => {
     document.querySelectorAll(".nav").forEach((b) => b.classList.remove("active"));
     button.classList.add("active");
+
+    if (button.dataset.scroll === "assignments") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     document.getElementById(button.dataset.scroll).scrollIntoView({ behavior: "smooth", block: "start" });
   };
 });

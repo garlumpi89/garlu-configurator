@@ -115,3 +115,44 @@
 .main-panel .panel-header h3 {
   letter-spacing: .14em;
 }
+
+
+/* v2.11 refinements */
+.nav.active,
+.nav:hover {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+}
+
+.nav {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.fader-icon {
+  height: 96px;
+  margin-top: 12px;
+  margin-bottom: 10px;
+}
+
+.fader-icon:before {
+  top: 6px;
+  height: 86px;
+}
+
+.fader-icon span {
+  top: 45px;
+}
+
+.fader-card input {
+  text-align: center;
+}
+
+.fader-card {
+  justify-content: flex-start;
+}
+
+.fader-card .cc-caption {
+  margin-top: 10px;
+}
