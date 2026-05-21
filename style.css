@@ -1186,3 +1186,9 @@ body:after {
 .welcome-actions.single-action .button {
   min-width: 180px;
 }
+
+
+/* v2.29 duplicate CC validation */
+.validation-panel{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.validation-panel .button{border-color:rgba(255,107,107,.45);color:#ffdada;background:rgba(255,107,107,.06)}
+@media(max-width:720px){.validation-panel{display:grid}.validation-panel .button{width:100%}}

@@ -1,5 +1,5 @@
 
-let port=null,demoMode=false,currentPage=0,validationIssues=[],suppressTopValidation=false,isConnected=false;
+let port=null,demoMode=false,currentPage=0,validationIssues=[],suppressTopValidation=false,isConnected=false,serialReaderActive=false;
 const $=(id)=>document.getElementById(id);
 
 const templates={
@@ -92,6 +92,7 @@ function setConnected(label="GARLU connected",connected=true){
 
 function setDisconnected(red=false,idle=false){
   isConnected=false;
+  serialReaderActive=false;
   if(red)demoMode=false;
   if(port&&port.close){try{port.close();}catch(e){}}
   port=null;
@@ -175,6 +176,7 @@ function validateConfig(candidate){
       issues.push({type:"structure",page:pageIndex,message:`Page ${pageIndex+1}: expected exactly 4 CC values.`});
       return;
     }
+    const seen=new Map();
     page.cc.forEach((value,faderIndex)=>{
       if(typeof value!=="number"||!Number.isFinite(value)){
         issues.push({type:"cc",page:pageIndex,fader:faderIndex,value,message:`Page ${pageIndex+1} · Fader ${faderIndex+1}: CC value must be numeric.`});
@@ -185,6 +187,14 @@ function validateConfig(candidate){
       }
       if(value<0||value>max){
         issues.push({type:"cc",page:pageIndex,fader:faderIndex,value,max,message:`Page ${pageIndex+1} · Fader ${faderIndex+1}: CC value ${value} exceeds maximum allowed value (${max}).`});
+      }
+      if(value>=0&&value<=max&&Number.isInteger(value)){
+        if(seen.has(value)){
+          const first=seen.get(value);
+          issues.push({type:"duplicate",page:pageIndex,fader:faderIndex,firstFader:first,value,message:`Page ${pageIndex+1}: CC ${value} is assigned to Fader ${first+1} and Fader ${faderIndex+1}.`});
+        }else{
+          seen.set(value,faderIndex);
+        }
       }
     });
   });
@@ -217,11 +227,17 @@ function updateValidationHighlights(){
     resolutionHint.textContent="";
     resolutionHint.classList.remove("invalid-text");
   }
-  validationIssues.filter(issue=>issue.type==="cc"&&issue.page===currentPage).forEach(issue=>{
+  validationIssues.filter(issue=>(issue.type==="cc"||issue.type==="duplicate")&&issue.page===currentPage).forEach(issue=>{
     const card=$(`card${issue.fader}`);
     const hint=$(`hint${issue.fader}`);
     if(card)card.classList.add("invalid");
-    if(hint)hint.textContent=issue.max!==undefined?`MAX ${issue.max} EXCEEDED`:"INVALID CC";
+    if(hint)hint.textContent=issue.type==="duplicate"?`DUPLICATE CC ${issue.value}`:(issue.max!==undefined?`MAX ${issue.max} EXCEEDED`:"INVALID CC");
+    if(issue.type==="duplicate"){
+      const firstCard=$(`card${issue.firstFader}`);
+      const firstHint=$(`hint${issue.firstFader}`);
+      if(firstCard)firstCard.classList.add("invalid");
+      if(firstHint)firstHint.textContent=`DUPLICATE CC ${issue.value}`;
+    }
   });
   if(validationIssues.find(issue=>issue.field==="highResolution")&&resolutionSetting&&resolutionHint){
     resolutionSetting.classList.add("invalid");
@@ -334,6 +350,35 @@ function updateConfigFromUi(){
   setValidationIssues(validateConfig(config));
 }
 
+
+function autoFixDuplicateCCs(){
+  updateConfigFromUi();
+  const max=maxAllowedCC(config);
+  config.pages.forEach(page=>{
+    if(!page.cc||!Array.isArray(page.cc))return;
+    const used=new Set();
+    page.cc=page.cc.map(value=>{
+      let cc=Number.isInteger(value)?value:0;
+      if(cc<0||cc>max)cc=Math.max(0,Math.min(max,cc));
+      if(!used.has(cc)){
+        used.add(cc);
+        return cc;
+      }
+      for(let candidate=0;candidate<=max;candidate++){
+        if(!used.has(candidate)){
+          used.add(candidate);
+          return candidate;
+        }
+      }
+      return cc;
+    });
+  });
+  setValidationIssues(validateConfig(config));
+  updateUiFromConfig();
+  setOutputText(JSON.stringify(configForDevice()||config,null,2));
+  toast("Duplicate CCs auto-fixed");
+}
+
 function configForDevice(){
   updateConfigFromUi();
   if(validationIssues.length)return null;
@@ -431,6 +476,61 @@ async function readDeviceConfig(){
   updateUiFromConfig();
 }
 
+
+async function handleDeviceLine(line){
+  const trimmed=line.trim();
+  if(!trimmed)return;
+
+  if(trimmed==="REQUEST_CONFIG"){
+    const payload=configForDevice();
+    if(!payload){
+      toast("Fix config issues before sending preset");
+      return;
+    }
+    await writeLine("SET_CONFIG "+JSON.stringify(payload));
+    toast("Preset sent to GARLU");
+    return;
+  }
+
+  if(trimmed.startsWith("{")){
+    setOutputText(trimmed);
+    try{
+      const parsed=JSON.parse(trimmed);
+      if(parsed.device==="GARLU_FADER_MINI"&&parsed.pages){
+        Object.assign(config,parsed);
+        setValidationIssues(validateConfig(config));
+        updateUiFromConfig();
+      }
+    }catch(error){}
+  }
+}
+
+async function startSerialListener(){
+  if(!port||!port.readable||serialReaderActive)return;
+  serialReaderActive=true;
+  const reader=port.readable.getReader();
+  const decoder=new TextDecoder();
+  let buffer="";
+  try{
+    while(serialReaderActive&&port){
+      const {value,done}=await reader.read();
+      if(done)break;
+      buffer+=decoder.decode(value,{stream:true});
+      let index;
+      while((index=buffer.indexOf("\n"))>=0){
+        const line=buffer.slice(0,index);
+        buffer=buffer.slice(index+1);
+        await handleDeviceLine(line);
+      }
+    }
+  }catch(error){
+    if(serialReaderActive)console.warn("GARLU serial listener stopped",error);
+  }finally{
+    try{reader.releaseLock();}catch(error){}
+    serialReaderActive=false;
+  }
+}
+
 async function connectDevice(){
   if(!("serial" in navigator)){
     showConnectionWarning("Web Serial is not available in this browser. Use Chrome or Edge over HTTPS/localhost.");
@@ -447,6 +547,7 @@ async function connectDevice(){
     toast("Reading device configuration...");
     await readDeviceConfig();
     setConnected("GARLU connected",true);
+    startSerialListener();
     toast(`${deviceDisplayName(config.device)} connected`);
   }catch(error){
     try{if(port)await port.close();}catch(e){}
@@ -587,9 +688,8 @@ function init(){
       return;
     }
     await writeLine("SET_CONFIG "+JSON.stringify(payload));
-    const response=await readLine(1500);
-    setOutputText(response);
-    toast("GARLU updated");
+    setOutputText(JSON.stringify(payload,null,2));
+    toast("GARLU update sent");
   };
 
   document.querySelectorAll(".page").forEach(button=>{
@@ -703,6 +803,9 @@ function init(){
   };
 
   $("applyJsonBtn").onclick=saveEditedJsonFile;
+
+  const autoFix=$("autoFixBtn");
+  if(autoFix)autoFix.onclick=autoFixDuplicateCCs;
 
   const closeWarnings=$("jsonWarningsClose");
   if(closeWarnings)closeWarnings.onclick=()=>setJsonWarnings([]);
