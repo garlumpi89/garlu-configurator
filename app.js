@@ -364,7 +364,8 @@ function autoFixDuplicateCCs(){
         used.add(cc);
         return cc;
       }
-      for(let candidate=0;candidate<=max;candidate++){
+      for(let offset=1;offset<=max+1;offset++){
+        const candidate=(cc+offset)%(max+1);
         if(!used.has(candidate)){
           used.add(candidate);
           return candidate;

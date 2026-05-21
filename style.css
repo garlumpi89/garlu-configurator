@@ -1192,3 +1192,29 @@ body:after {
 .validation-panel{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .validation-panel .button{border-color:rgba(255,107,107,.45);color:#ffdada;background:rgba(255,107,107,.06)}
 @media(max-width:720px){.validation-panel{display:grid}.validation-panel .button{width:100%}}
+
+
+/* v2.30 refinements */
+.welcome-actions.single-action .button,
+.welcome .button.primary {
+  font-size: 16px;
+  min-height: 54px;
+  padding: 0 32px;
+}
+
+.fader-card.invalid input:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(255,107,107,.28);
+  border-color: rgba(255,107,107,.85);
+}
+
+.fader-card input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.fader-card input[type=number]::-webkit-outer-spin-button,
+.fader-card input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
