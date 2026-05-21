@@ -351,33 +351,44 @@ function updateConfigFromUi(){
 }
 
 
+function nextAvailableCC(page, max, preferred=0, excludeIndex=-1){
+  const used=new Set((page.cc||[]).map((v,i)=>i===excludeIndex?null:v).filter(v=>Number.isInteger(v)&&v>=0&&v<=max));
+  for(let offset=1;offset<=max+1;offset++){
+    const candidate=(preferred+offset)%(max+1);
+    if(!used.has(candidate))return candidate;
+  }
+  return preferred;
+}
+
 function autoFixDuplicateCCs(){
   updateConfigFromUi();
   const max=maxAllowedCC(config);
-  config.pages.forEach(page=>{
-    if(!page.cc||!Array.isArray(page.cc))return;
-    const used=new Set();
-    page.cc=page.cc.map(value=>{
-      let cc=Number.isInteger(value)?value:0;
-      if(cc<0||cc>max)cc=Math.max(0,Math.min(max,cc));
-      if(!used.has(cc)){
-        used.add(cc);
-        return cc;
-      }
-      for(let offset=1;offset<=max+1;offset++){
-        const candidate=(cc+offset)%(max+1);
-        if(!used.has(candidate)){
-          used.add(candidate);
-          return candidate;
-        }
-      }
-      return cc;
-    });
-  });
+  const duplicates=validateConfig(config).filter(issue=>issue.type==="duplicate");
+  if(!duplicates.length){
+    toast("No duplicate CCs detected");
+    return;
+  }
+
+  const issue=duplicates.find(i=>i.page===currentPage)||duplicates[0];
+  const page=config.pages[issue.page];
+  const choice=window.prompt(
+    `Duplicate CC ${issue.value} on Page ${issue.page+1}. Which fader should be updated? (${issue.firstFader+1} or ${issue.fader+1})`,
+    String(issue.fader+1)
+  );
+  if(choice===null)return;
+  const selected=Number(choice)-1;
+  if(selected!==issue.firstFader&&selected!==issue.fader){
+    toast("Auto-fix cancelled: invalid fader selection");
+    return;
+  }
+
+  page.cc[selected]=nextAvailableCC(page,max,issue.value,selected);
+  currentPage=issue.page;
+  document.querySelectorAll(".page").forEach(button=>button.classList.toggle("active",Number(button.dataset.page)===currentPage));
   setValidationIssues(validateConfig(config));
   updateUiFromConfig();
   setOutputText(JSON.stringify(configForDevice()||config,null,2));
-  toast("Duplicate CCs auto-fixed");
+  toast(`Fader ${selected+1} assigned to next available CC`);
 }
 
 function configForDevice(){

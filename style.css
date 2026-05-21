@@ -1218,3 +1218,30 @@ body:after {
   -webkit-appearance: none;
   margin: 0;
 }
+
+
+/* v2.31 subtle integrated numeric steppers */
+.fader-card input[type=number] {
+  appearance: auto;
+  -moz-appearance: number-input;
+  padding-right: 8px;
+}
+.fader-card input[type=number]::-webkit-outer-spin-button,
+.fader-card input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button;
+  opacity: .28;
+  filter: grayscale(1) brightness(1.35);
+  cursor: pointer;
+}
+.fader-card input[type=number]:hover::-webkit-outer-spin-button,
+.fader-card input[type=number]:hover::-webkit-inner-spin-button,
+.fader-card input[type=number]:focus::-webkit-outer-spin-button,
+.fader-card input[type=number]:focus::-webkit-inner-spin-button {
+  opacity: .62;
+}
+.fader-card.invalid .fader-visual span {
+  box-shadow: 0 6px 10px rgba(0,0,0,.55), 0 0 0 2px rgba(255,107,107,.65);
+}
+.fader-card.invalid input:focus {
+  box-shadow: 0 0 0 1px rgba(255,107,107,.45);
+}
