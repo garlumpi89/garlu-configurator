@@ -113,7 +113,7 @@ function toggleConnection(){
     toast("GARLU disconnected");
     return;
   }
-  connectDashboardTestMode();
+  connectDevice();
 }
 
 function outputEl(){return $("output");}
@@ -381,41 +381,60 @@ async function writeLine(line){
   writer.releaseLock();
 }
 
-async function readLine(){
+async function readLine(timeoutMs=0){
   const reader=port.readable.getReader();
   let text="";
-  while(true){
-    const {value,done}=await reader.read();
-    if(done)break;
-    text+=new TextDecoder().decode(value);
-    if(text.includes("\n"))break;
+  let timer=null;
+
+  try{
+    if(timeoutMs>0){
+      timer=setTimeout(()=>{
+        try{reader.cancel();}catch(error){}
+      },timeoutMs);
+    }
+
+    while(true){
+      const {value,done}=await reader.read();
+      if(done)break;
+      text+=new TextDecoder().decode(value);
+      if(text.includes("\n"))break;
+    }
+  }finally{
+    if(timer)clearTimeout(timer);
+    reader.releaseLock();
   }
-  reader.releaseLock();
-  return text.trim();
+
+  text=text.trim();
+  if(!text)throw new Error("timeout");
+  return text;
 }
 
 async function readDeviceConfig(){
-  await writeLine("GET_CONFIG");
-  const response=await readLine();
+  let response="";
+
+  // FW v1.9 sends its current JSON automatically as soon as USB serial opens.
+  // If an older FW does not do that, fall back to GET_CONFIG.
+  try{
+    response=await readLine(1200);
+  }catch(error){
+    await writeLine("GET_CONFIG");
+    response=await readLine(1500);
+  }
+
+  if(!response.startsWith("{")){
+    throw new Error("Invalid response from GARLU");
+  }
+
   setOutputText(response);
   Object.assign(config,JSON.parse(response));
   setValidationIssues(validateConfig(config));
   updateUiFromConfig();
 }
 
-function connectAsTestMode(message="GARLU connected"){
-  demoMode=true;
-  showApp();
-  config.device="GARLU_FADER_MINI";
-  config.fw=config.fw||"demo";
-  setConnected("GARLU connected",true);
-  updateUiFromConfig();
-  toast(message);
-}
-
 async function connectDevice(){
   if(!("serial" in navigator)){
-    connectAsTestMode("Test connection active");
+    showConnectionWarning("Web Serial is not available in this browser. Use Chrome or Edge over HTTPS/localhost.");
+    toast("Web Serial not available");
     return;
   }
   try{
@@ -426,27 +445,18 @@ async function connectDevice(){
     $("connectBtn").classList.remove("connected","disconnected");
     $("connectBtn").textContent="Reading GARLU...";
     toast("Reading device configuration...");
-    await Promise.race([
-      readDeviceConfig(),
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error("timeout")),1200))
-    ]);
+    await readDeviceConfig();
     setConnected("GARLU connected",true);
     toast(`${deviceDisplayName(config.device)} connected`);
   }catch(error){
-    connectAsTestMode("GARLU connected in test mode");
+    try{if(port)await port.close();}catch(e){}
+    port=null;
+    setDisconnected(true,false);
+    showConnectionWarning("Could not establish USB connection with GARLU. Check cable, permissions and firmware.");
+    toast("GARLU connection failed");
   }
 }
 
-function startDemoMode(){
-  demoMode=true;
-  showApp();
-  config.device="GARLU_FADER_MINI";
-  config.fw="demo";
-  setDisconnected(false,true);
-  $("connectionStatus").textContent="GARLU FADER";
-  updateUiFromConfig();
-  toast("Demo mode active");
-}
 
 function importConfigFromRawText(rawText,label="JSON"){
   suppressTopValidation=true;
@@ -550,50 +560,8 @@ async function saveEditedJsonFile(){
   toast("JSON file downloaded");
 }
 
-function showConnectionWarning(message="Connect to GARLU before updating the device."){
-  const el=$("connectionWarning");
-  if(!el)return;
-  el.textContent=message;
-  el.classList.remove("hidden");
-  clearTimeout(window.__garluConnectionWarningTimer);
-  window.__garluConnectionWarningTimer=setTimeout(()=>el.classList.add("hidden"),5200);
-}
-
-function hideConnectionWarning(){
-  const el=$("connectionWarning");
-  if(el)el.classList.add("hidden");
-}
-
-function toggleConnection(){
-  if(isConnected){
-    demoMode=false;
-    setDisconnected(true,false);
-    toast("GARLU disconnected");
-    return;
-  }
-  connectDashboardTestMode();
-}
-
 function startDashboard(){
-  showApp();
-  demoMode=true;
-  isConnected=false;
-  config.device="GARLU_FADER_MINI";
-  config.fw="demo";
-  setDisconnected(false,true);
-  $("connectionStatus").textContent="GARLU FADER";
-  updateUiFromConfig();
-  toast("Dashboard ready");
-}
-
-function connectDashboardTestMode(){
-  demoMode=true;
-  showApp();
-  config.device="GARLU_FADER_MINI";
-  config.fw="demo";
-  setConnected("GARLU connected",true);
-  updateUiFromConfig();
-  toast("GARLU connected in test mode");
+  connectDevice();
 }
 
 function init(){
@@ -604,7 +572,7 @@ function init(){
   if(connect)connect.onclick=toggleConnection;
 
   $("saveBtn").onclick=async()=>{
-    if((!isConnected&&!demoMode)||$("connectBtn").classList.contains("disconnected")){
+    if(!isConnected||$("connectBtn").classList.contains("disconnected")){
       showConnectionWarning("Connect to GARLU before updating the device.");
       toast("Connect to GARLU first");
       return;
@@ -614,18 +582,12 @@ function init(){
       toast("Fix configuration issues first");
       return;
     }
-    if(demoMode){
-      Object.assign(config,payload);
-      setOutputText(JSON.stringify(config,null,2));
-      toast("Demo configuration updated");
-      return;
-    }
     if(!port){
       showConnectionWarning("Connect to GARLU before updating the device.");
       return;
     }
     await writeLine("SET_CONFIG "+JSON.stringify(payload));
-    const response=await readLine();
+    const response=await readLine(1500);
     setOutputText(response);
     toast("GARLU updated");
   };
