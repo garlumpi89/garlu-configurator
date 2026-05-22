@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GARLU Configurator</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="./style.css?v=2.31"></head><body>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GARLU Configurator</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="./style.css?v=2.32"></head><body>
 <section id="welcome" class="welcome">
     <div class="landing-light-orb orb-a"></div>
     <div class="landing-light-orb orb-b"></div>
@@ -116,7 +116,22 @@
               <strong id="ringBrightnessValue">70%</strong>
             </div>
             <input id="ringBrightness" class="range-slider" type="range" min="0" max="100" step="1" value="70" />
-          </div></aside></section>
+          </div><label class="setting">
+            <span>Auxiliary Banner</span>
+            <div class="custom-select" data-select="auxiliaryBanner">
+              <button type="button" class="custom-select-trigger">
+                <span>ON</span>
+              </button>
+              <div class="custom-select-menu">
+                <button type="button" data-value="on">ON</button>
+                <button type="button" data-value="off">OFF</button>
+              </div>
+            </div>
+            <select id="auxiliaryBanner" class="native-select-hidden">
+              <option value="on">ON</option>
+              <option value="off">OFF</option>
+            </select>
+          </label></aside></section>
 <section class="secondary-grid"><section id="backup" class="panel utility-panel"><div class="panel-header compact"><div><h3>JSON Import/Export</h3><p>Import or export your configuration as a JSON file.</p></div></div><div class="backup-actions"><label class="button ghost backup-button">Import JSON<input id="importInput" class="file-input-hidden" type="file" accept="application/json,.json"></label><button id="sampleBtn" class="button ghost backup-button">Download Example</button><button id="exportBtn" class="button ghost backup-button">Export JSON</button></div><p class="json-note">Note: standard JSON does not support comments. The exported example includes an <code>_allowedValues</code> helper section instead.</p>
           <div id="jsonWarnings" class="json-warnings hidden">
             <span id="jsonWarningsText"></span>
@@ -125,4 +140,4 @@
           <textarea id="output" spellcheck="false" aria-label="JSON editor"></textarea>
           <div class="json-editor-actions">
             <button id="applyJsonBtn" class="button ghost backup-button">Save JSON file</button>
-          </div></section><section id="templates" class="panel utility-panel"><div class="panel-header compact"><div><h3>Templates</h3><p>Load a template to quickly apply a preset configuration.</p></div></div><div class="template-actions"><label class="button ghost backup-button">Add Local Template<input id="templateInput" type="file" accept="application/json,.json"></label></div><div class="template-grid" id="templateGrid"><button class="template" data-template="default"><strong>Default</strong><span>Expression, modulation, volume and utility CCs.</span></button><button class="template" data-template="ableton"><strong>Ableton Mixer</strong><span>Volume, sends, pan and device macros.</span></button><button class="template" data-template="synth"><strong>Synth Control</strong><span>Filter, resonance, envelope and modulation.</span></button><button class="template" data-template="orchestral"><strong>Orchestral Expression</strong><span>Expression, dynamics, vibrato and timbre.</span></button></div></section></section></section></main><div id="toast" class="toast hidden"></div><script src="./app.js?v=2.31"></script></body></html>
+          </div></section><section id="templates" class="panel utility-panel"><div class="panel-header compact"><div><h3>Templates</h3><p>Load a template to quickly apply a preset configuration.</p></div></div><div class="template-actions"><label class="button ghost backup-button">Add Local Template<input id="templateInput" type="file" accept="application/json,.json"></label></div><div class="template-grid" id="templateGrid"><button class="template" data-template="default"><strong>Default</strong><span>Expression, modulation, volume and utility CCs.</span></button><button class="template" data-template="ableton"><strong>Ableton Mixer</strong><span>Volume, sends, pan and device macros.</span></button><button class="template" data-template="synth"><strong>Synth Control</strong><span>Filter, resonance, envelope and modulation.</span></button><button class="template" data-template="orchestral"><strong>Orchestral Expression</strong><span>Expression, dynamics, vibrato and timbre.</span></button></div></section></section></section></main><div id="toast" class="toast hidden"></div><script src="./app.js?v=2.32"></script></body></html>

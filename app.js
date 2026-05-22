@@ -16,6 +16,7 @@ const config={
   highResolution:false,
   oledBrightness:70,
   ringBrightness:70,
+  auxiliaryBanner:true,
   pages:JSON.parse(JSON.stringify(templates.default.pages))
 };
 
@@ -156,6 +157,9 @@ function validateConfig(candidate){
   if(typeof candidate.highResolution!=="boolean"){
     issues.push({type:"field",field:"highResolution",message:`highResolution must be true or false. Current value: ${JSON.stringify(candidate.highResolution)}.`});
   }
+  if(typeof candidate.auxiliaryBanner!=="boolean"){
+    issues.push({type:"field",field:"auxiliaryBanner",message:`auxiliaryBanner must be true or false. Current value: ${JSON.stringify(candidate.auxiliaryBanner)}.`});
+  }
   if(!layouts.includes(candidate.screenLayout)){
     issues.push({type:"field",field:"screenLayout",message:`screenLayout must be "standard" or "performance". Current value: ${JSON.stringify(candidate.screenLayout)}.`});
   }
@@ -249,7 +253,8 @@ function updateValidationHighlights(){
 function labelForSelectValue(id,value){
   const labels={
     screenLayout:{standard:"Standard Layout",performance:"Performance Layout"},
-    resolutionMode:{midi1:"MIDI 1.0 (7-bit)",enhanced:"Enhanced MIDI 1.0 (14-bit)"}
+    resolutionMode:{midi1:"MIDI 1.0 (7-bit)",enhanced:"Enhanced MIDI 1.0 (14-bit)"},
+    auxiliaryBanner:{on:"ON",off:"OFF"}
   };
   return labels[id]?.[value]||value;
 }
@@ -318,6 +323,7 @@ function updateRingSlider(){
 function updateUiFromConfig(){
   $("screenLayout").value=["standard","performance"].includes(config.screenLayout)?config.screenLayout:"standard";
   $("resolutionMode").value=config.highResolution===true?"enhanced":"midi1";
+  if($("auxiliaryBanner")) $("auxiliaryBanner").value=config.auxiliaryBanner===false?"off":"on";
   config.oledBrightness=normalizeOled(config.oledBrightness);
   config.ringBrightness=normalizeRing(config.ringBrightness);
   updateOledSlider();
@@ -338,6 +344,7 @@ function updateConfigFromUi(){
   suppressTopValidation=false;
   config.screenLayout=$("screenLayout").value;
   config.highResolution=$("resolutionMode").value==="enhanced";
+  if($("auxiliaryBanner")) config.auxiliaryBanner=$("auxiliaryBanner").value!=="off";
   config.oledBrightness=normalizeOled($("oledBrightness").value);
   config.ringBrightness=normalizeRing($("ringBrightness").value);
   updateOledSlider();
@@ -400,6 +407,7 @@ function configForDevice(){
     highResolution:config.highResolution,
     oledBrightness:config.oledBrightness,
     ringBrightness:config.ringBrightness,
+    auxiliaryBanner:config.auxiliaryBanner!==false,
     pages:config.pages
   };
 }
@@ -411,6 +419,7 @@ function sampleConfig(){
       highResolution:[false,true],
       oledBrightness:"0-100",
       ringBrightness:"0-100",
+      auxiliaryBanner:[true,false],
       ccRange:"0-127 when highResolution=false; 0-31 when highResolution=true"
     },
     device:"GARLU_FADER_MINI",
@@ -418,6 +427,7 @@ function sampleConfig(){
     highResolution:false,
     oledBrightness:70,
     ringBrightness:70,
+    auxiliaryBanner:true,
     pages:JSON.parse(JSON.stringify(templates.default.pages))
   };
 }
@@ -583,6 +593,7 @@ function importConfigFromRawText(rawText,label="JSON"){
     config.highResolution=parsed.highResolution;
     config.oledBrightness=parsed.oledBrightness;
     config.ringBrightness=parsed.ringBrightness;
+    config.auxiliaryBanner=parsed.auxiliaryBanner!==false;
     config.pages=JSON.parse(JSON.stringify(parsed.pages));
 
     currentPage=0;
@@ -726,7 +737,7 @@ function init(){
     };
   });
 
-  ["screenLayout","resolutionMode","oledBrightness","ringBrightness","cc0","cc1","cc2","cc3"].forEach(id=>{
+  ["screenLayout","resolutionMode","auxiliaryBanner","oledBrightness","ringBrightness","cc0","cc1","cc2","cc3"].forEach(id=>{
     const el=$(id);
     if(!el)return;
     el.addEventListener("change",()=>{
@@ -762,6 +773,7 @@ function init(){
         highResolution:Boolean(parsed.highResolution),
         oledBrightness:parsed.oledBrightness??70,
         ringBrightness:parsed.ringBrightness??70,
+        auxiliaryBanner:parsed.auxiliaryBanner!==false,
         pages:parsed.pages
       };
       const issues=validateConfig(candidate);
