@@ -2,11 +2,12 @@
 let port=null,demoMode=false,currentPage=0,validationIssues=[],suppressTopValidation=false,isConnected=false,serialReaderActive=false;
 const $=(id)=>document.getElementById(id);
 
-const templates={
-  default:{pages:[{cc:[11,1,21,7]},{cc:[22,23,24,25]},{cc:[26,27,28,29]},{cc:[30,31,0,1]}]},
-  ableton:{pages:[{cc:[7,10,91,93]},{cc:[14,15,16,17]},{cc:[20,21,22,23]},{cc:[24,25,26,27]}]},
-  synth:{pages:[{cc:[74,71,73,72]},{cc:[1,11,5,65]},{cc:[20,21,22,23]},{cc:[24,25,26,27]}]},
-  orchestral:{pages:[{cc:[11,1,2,21]},{cc:[22,23,24,25]},{cc:[26,27,28,29]},{cc:[30,31,0,1]}]}
+function makePage(cc, labels=["","","",""]){return {cc,min:[0,0,0,0],max:[127,127,127,127],labels};}
+const presets={
+  default:{pages:[makePage([11,1,21,7],["Expr","Mod","Ctrl21","Vol"]),makePage([22,23,24,25]),makePage([26,27,28,29]),makePage([30,31,0,1])]},
+  ableton:{pages:[makePage([7,10,91,93],["Volume","Pan","Send A","Send B"]),makePage([14,15,16,17],["Macro 1","Macro 2","Macro 3","Macro 4"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
+  synth:{pages:[makePage([74,71,73,72],["Cutoff","Reso","Attack","Release"]),makePage([1,11,5,65],["Mod","Expr","Porta","Sustain"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
+  orchestral:{pages:[makePage([11,1,2,21],["Expr","Dyn","Breath","Vibrato"]),makePage([22,23,24,25]),makePage([26,27,28,29]),makePage([30,31,0,1])]}
 };
 
 const config={
@@ -17,7 +18,7 @@ const config={
   oledBrightness:70,
   ringBrightness:70,
   auxiliaryBanner:true,
-  pages:JSON.parse(JSON.stringify(templates.default.pages))
+  pages:JSON.parse(JSON.stringify(presets.default.pages))
 };
 
 const brightMap={low:25,medium:70,high:100};
@@ -45,6 +46,28 @@ function normalizePercent(value){
   return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):70;
 }
 function normalizeRing(value){return normalizePercent(value);}
+function ensurePageShape(page){
+  page.cc=Array.isArray(page.cc)?page.cc.slice(0,4):[0,0,0,0];
+  while(page.cc.length<4)page.cc.push(0);
+  page.min=Array.isArray(page.min)?page.min.slice(0,4):[0,0,0,0];
+  page.max=Array.isArray(page.max)?page.max.slice(0,4):[127,127,127,127];
+  page.labels=Array.isArray(page.labels)?page.labels.slice(0,4):["","","",""];
+  while(page.min.length<4)page.min.push(0);
+  while(page.max.length<4)page.max.push(127);
+  while(page.labels.length<4)page.labels.push("");
+  for(let i=0;i<4;i++){
+    page.min[i]=Math.max(0,Math.min(127,Number(page.min[i]??0)));
+    page.max[i]=Math.max(0,Math.min(127,Number(page.max[i]??127)));
+    if(page.min[i]>page.max[i])page.max[i]=page.min[i];
+    page.labels[i]=String(page.labels[i]??"").slice(0,12);
+  }
+  return page;
+}
+function ensureConfigShape(){
+  if(!Array.isArray(config.pages))config.pages=JSON.parse(JSON.stringify(presets.default.pages));
+  while(config.pages.length<4)config.pages.push(makePage([0,0,0,0]));
+  config.pages=config.pages.slice(0,4).map(ensurePageShape);
+}
 function normalizeOled(value){return normalizePercent(value);}
 
 function updateDeviceLabels(){
@@ -176,6 +199,7 @@ function validateConfig(candidate){
 
   const max=maxAllowedCC(candidate);
   candidate.pages.forEach((page,pageIndex)=>{
+    ensurePageShape(page);
     if(!page.cc||!Array.isArray(page.cc)||page.cc.length!==4){
       issues.push({type:"structure",page:pageIndex,message:`Page ${pageIndex+1}: expected exactly 4 CC values.`});
       return;
@@ -199,6 +223,12 @@ function validateConfig(candidate){
         }else{
           seen.set(value,faderIndex);
         }
+      }
+    });
+    page.min.forEach((minValue,faderIndex)=>{
+      const maxValue=page.max[faderIndex];
+      if(!Number.isInteger(minValue)||!Number.isInteger(maxValue)||minValue<0||maxValue>127||minValue>maxValue){
+        issues.push({type:"range",page:pageIndex,fader:faderIndex,message:`Page ${pageIndex+1} · Fader ${faderIndex+1}: min/max range must be 0-127 and min ≤ max.`});
       }
     });
   });
@@ -231,11 +261,11 @@ function updateValidationHighlights(){
     resolutionHint.textContent="";
     resolutionHint.classList.remove("invalid-text");
   }
-  validationIssues.filter(issue=>(issue.type==="cc"||issue.type==="duplicate")&&issue.page===currentPage).forEach(issue=>{
+  validationIssues.filter(issue=>(issue.type==="cc"||issue.type==="duplicate"||issue.type==="range")&&issue.page===currentPage).forEach(issue=>{
     const card=$(`card${issue.fader}`);
     const hint=$(`hint${issue.fader}`);
     if(card)card.classList.add("invalid");
-    if(hint)hint.textContent=issue.type==="duplicate"?`DUPLICATE CC ${issue.value}`:(issue.max!==undefined?`MAX ${issue.max} EXCEEDED`:"INVALID CC");
+    if(hint)hint.textContent=issue.type==="duplicate"?`DUPLICATE CC ${issue.value}`:(issue.type==="range"?"INVALID RANGE":(issue.max!==undefined?`MAX ${issue.max} EXCEEDED`:"INVALID CC"));
     if(issue.type==="duplicate"){
       const firstCard=$(`card${issue.firstFader}`);
       const firstHint=$(`hint${issue.firstFader}`);
@@ -321,6 +351,7 @@ function updateRingSlider(){
 }
 
 function updateUiFromConfig(){
+  ensureConfigShape();
   $("screenLayout").value=["standard","performance"].includes(config.screenLayout)?config.screenLayout:"standard";
   $("resolutionMode").value=config.highResolution===true?"enhanced":"midi1";
   if($("auxiliaryBanner")) $("auxiliaryBanner").value=config.auxiliaryBanner===false?"off":"on";
@@ -334,6 +365,10 @@ function updateUiFromConfig(){
     input.max=maxAllowedCC();
     input.min=0;
     input.value=config.pages[currentPage]?.cc?.[i]??"";
+    const minInput=$(`min${i}`), maxInput=$(`max${i}`), labelInput=$(`label${i}`);
+    if(minInput)minInput.value=config.pages[currentPage].min[i];
+    if(maxInput)maxInput.value=config.pages[currentPage].max[i];
+    if(labelInput)labelInput.value=config.pages[currentPage].labels[i]||"";
   }
   updateDeviceLabels();
   updateValidationHighlights();
@@ -342,6 +377,7 @@ function updateUiFromConfig(){
 
 function updateConfigFromUi(){
   suppressTopValidation=false;
+  ensureConfigShape();
   config.screenLayout=$("screenLayout").value;
   config.highResolution=$("resolutionMode").value==="enhanced";
   if($("auxiliaryBanner")) config.auxiliaryBanner=$("auxiliaryBanner").value!=="off";
@@ -353,6 +389,11 @@ function updateConfigFromUi(){
   for(let i=0;i<4;i++){
     const raw=$(`cc${i}`).value;
     config.pages[currentPage].cc[i]=raw===""?0:Number(raw);
+    const minRaw=$(`min${i}`)?.value;
+    const maxRaw=$(`max${i}`)?.value;
+    config.pages[currentPage].min[i]=minRaw===""?0:Number(minRaw);
+    config.pages[currentPage].max[i]=maxRaw===""?127:Number(maxRaw);
+    config.pages[currentPage].labels[i]=String($(`label${i}`)?.value||"").slice(0,12);
   }
   setValidationIssues(validateConfig(config));
 }
@@ -400,6 +441,7 @@ function autoFixDuplicateCCs(){
 
 function configForDevice(){
   updateConfigFromUi();
+  ensureConfigShape();
   if(validationIssues.length)return null;
   return {
     device:"GARLU_FADER_MINI",
@@ -428,7 +470,7 @@ function sampleConfig(){
     oledBrightness:70,
     ringBrightness:70,
     auxiliaryBanner:true,
-    pages:JSON.parse(JSON.stringify(templates.default.pages))
+    pages:JSON.parse(JSON.stringify(presets.default.pages))
   };
 }
 
@@ -595,6 +637,7 @@ function importConfigFromRawText(rawText,label="JSON"){
     config.ringBrightness=parsed.ringBrightness;
     config.auxiliaryBanner=parsed.auxiliaryBanner!==false;
     config.pages=JSON.parse(JSON.stringify(parsed.pages));
+    ensureConfigShape();
 
     currentPage=0;
     document.querySelectorAll(".page").forEach(button=>button.classList.remove("active"));
@@ -627,16 +670,16 @@ function importConfigFromRawText(rawText,label="JSON"){
   }
 }
 
-function getLocalTemplates(){
-  try{return JSON.parse(localStorage.getItem("garluLocalTemplates")||"[]");}
+function getLocalPresets(){
+  try{return JSON.parse(localStorage.getItem("garluLocalPresets")||"[]");}
   catch{return [];}
 }
 
-function saveLocalTemplates(items){
-  localStorage.setItem("garluLocalTemplates",JSON.stringify(items));
+function saveLocalPresets(items){
+  localStorage.setItem("garluLocalPresets",JSON.stringify(items));
 }
 
-function applyTemplatePages(pages,message="Template applied"){
+function applyPresetPages(pages,message="Preset applied"){
   updateConfigFromUi();
   config.pages=JSON.parse(JSON.stringify(pages));
   setValidationIssues(validateConfig(config));
@@ -645,16 +688,16 @@ function applyTemplatePages(pages,message="Template applied"){
   toast(message);
 }
 
-function renderLocalTemplates(){
-  const grid=$("templateGrid");
+function renderLocalPresets(){
+  const grid=$("presetGrid");
   if(!grid)return;
-  grid.querySelectorAll(".template.local-template").forEach(item=>item.remove());
-  getLocalTemplates().forEach((template,index)=>{
+  grid.querySelectorAll(".preset.local-preset").forEach(item=>item.remove());
+  getLocalPresets().forEach((preset,index)=>{
     const button=document.createElement("button");
-    button.className="template local-template";
-    button.dataset.localTemplate=String(index);
-    button.innerHTML=`<strong>${template.name||"Local template"}</strong><span>${template.description||"Stored locally in this browser."}</span>`;
-    button.onclick=()=>applyTemplatePages(template.pages,"Local template applied");
+    button.className="preset local-preset";
+    button.dataset.localPreset=String(index);
+    button.innerHTML=`<strong>${preset.name||"Local preset"}</strong><span>${preset.description||"Stored locally in this browser."}</span>`;
+    button.onclick=()=>applyPresetPages(preset.pages,"Local preset applied");
     grid.appendChild(button);
   });
 }
@@ -756,12 +799,12 @@ function init(){
     updateRingSlider();
   });
 
-  document.querySelectorAll(".template").forEach(button=>{
-    button.onclick=()=>applyTemplatePages(templates[button.dataset.template].pages,"Template applied");
+  document.querySelectorAll(".preset").forEach(button=>{
+    button.onclick=()=>applyPresetPages(presets[button.dataset.preset].pages,"Preset applied");
   });
 
-  $("templateInput").addEventListener("click",event=>{event.target.value="";});
-  $("templateInput").onchange=async event=>{
+  $("presetInput").addEventListener("click",event=>{event.target.value="";});
+  $("presetInput").onchange=async event=>{
     const file=event.target.files[0];
     if(!file)return;
     const raw=await file.text();
@@ -780,23 +823,23 @@ function init(){
       if(issues.length){
         setJsonWarnings(issues.map(issue=>issue.message));
         setOutputText(raw,true);
-        toast("Template has validation issues");
+        toast("Preset has validation issues");
         return;
       }
-      const items=getLocalTemplates();
+      const items=getLocalPresets();
       items.push({
         name:parsed.name||file.name.replace(/\.json$/i,""),
-        description:parsed.description||"Local user template",
+        description:parsed.description||"Local user preset",
         pages:parsed.pages
       });
-      saveLocalTemplates(items);
-      renderLocalTemplates();
+      saveLocalPresets(items);
+      renderLocalPresets();
       setOutputText(JSON.stringify(parsed,null,2));
-      toast("Local template added");
+      toast("Local preset added");
     }catch(error){
       setJsonWarnings(["Invalid JSON syntax. Check commas, quotes and boolean values."]);
       setOutputText(raw,true);
-      toast("Invalid template JSON");
+      toast("Invalid preset JSON");
     }finally{
       event.target.value="";
     }
@@ -835,7 +878,7 @@ function init(){
   if(closeWarnings)closeWarnings.onclick=()=>setJsonWarnings([]);
 
   initCustomSelects();
-  renderLocalTemplates();
+  renderLocalPresets();
   updateUiFromConfig();
   setDisconnected(false,true);
 }
