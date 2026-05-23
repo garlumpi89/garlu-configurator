@@ -2,12 +2,17 @@
 let port=null,demoMode=false,currentPage=0,validationIssues=[],suppressTopValidation=false,isConnected=false,serialReaderActive=false;
 const $=(id)=>document.getElementById(id);
 
-function makePage(cc, labels=["","","",""]){return {cc,min:[0,0,0,0],max:[127,127,127,127],labels};}
+function makePage(cc, labels=["","","",""], values=[63,63,63,63]){return {cc,min:[0,0,0,0],max:[127,127,127,127],labels,values};}
 const presets={
-  default:{pages:[makePage([11,1,21,7],["Expr","Mod","Ctrl21","Vol"]),makePage([22,23,24,25]),makePage([26,27,28,29]),makePage([30,31,0,1])]},
-  ableton:{pages:[makePage([7,10,91,93],["Volume","Pan","Send A","Send B"]),makePage([14,15,16,17],["Macro 1","Macro 2","Macro 3","Macro 4"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
-  synth:{pages:[makePage([74,71,73,72],["Cutoff","Reso","Attack","Release"]),makePage([1,11,5,65],["Mod","Expr","Porta","Sustain"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
-  orchestral:{pages:[makePage([11,1,2,21],["Expr","Dyn","Breath","Vibrato"]),makePage([22,23,24,25]),makePage([26,27,28,29]),makePage([30,31,0,1])]}
+  default:{name:"Default",pages:[makePage([11,1,21,7],["Expr","Mod","Ctrl21","Vol"]),makePage([22,23,24,25]),makePage([26,27,28,29]),makePage([30,31,0,1])]},
+  liveMixer:{name:"Live-style Mixer",pages:[makePage([7,10,91,93],["Volume","Pan","Send A","Send B"]),makePage([14,15,16,17],["Ch5","Ch6","Ch7","Ch8"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
+  liveMacros:{name:"Live-style Macros",pages:[makePage([14,15,16,17],["Macro 1","Macro 2","Macro 3","Macro 4"]),makePage([18,19,20,21],["Macro 5","Macro 6","Macro 7","Macro 8"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
+  smartControls:{name:"Smart Controls",pages:[makePage([20,21,22,23],["Smart 1","Smart 2","Smart 3","Smart 4"]),makePage([24,25,26,27]),makePage([28,29,30,31]),makePage([32,33,34,35])]},
+  quickControls:{name:"Quick Controls",pages:[makePage([16,17,18,19],["Quick 1","Quick 2","Quick 3","Quick 4"]),makePage([20,21,22,23]),makePage([24,25,26,27]),makePage([28,29,30,31])]},
+  samplerExpression:{name:"Sampler Expression",pages:[makePage([11,1,2,21],["Expr","Dyn","Breath","Vibrato"]),makePage([7,10,64,91],["Volume","Pan","Sustain","Reverb"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
+  synth:{name:"Synth Control",pages:[makePage([74,71,73,72],["Cutoff","Reso","Attack","Release"]),makePage([1,11,5,65],["Mod","Expr","Porta","Sustain"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
+  orchestral:{name:"Orchestral",pages:[makePage([11,1,2,21],["Expr","Dyn","Breath","Vibrato"]),makePage([7,10,91,93],["Volume","Pan","Room","Reverb"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
+  djFx:{name:"DJ FX",pages:[makePage([74,91,92,93],["Filter","Reverb","Tremolo","Chorus"]),makePage([20,21,22,23],["FX 1","FX 2","FX 3","FX 4"]),makePage([24,25,26,27]),makePage([28,29,30,31])]}
 };
 
 const config={
@@ -52,14 +57,17 @@ function ensurePageShape(page){
   page.min=Array.isArray(page.min)?page.min.slice(0,4):[0,0,0,0];
   page.max=Array.isArray(page.max)?page.max.slice(0,4):[127,127,127,127];
   page.labels=Array.isArray(page.labels)?page.labels.slice(0,4):["","","",""];
+  page.values=Array.isArray(page.values)?page.values.slice(0,4):[63,63,63,63];
   while(page.min.length<4)page.min.push(0);
   while(page.max.length<4)page.max.push(127);
   while(page.labels.length<4)page.labels.push("");
+  while(page.values.length<4)page.values.push(63);
   for(let i=0;i<4;i++){
     page.min[i]=Math.max(0,Math.min(127,Number(page.min[i]??0)));
     page.max[i]=Math.max(0,Math.min(127,Number(page.max[i]??127)));
     if(page.min[i]>page.max[i])page.max[i]=page.min[i];
     page.labels[i]=String(page.labels[i]??"").slice(0,12);
+    page.values[i]=Math.max(0,Math.min(127,Number(page.values[i]??63)));
   }
   return page;
 }
@@ -225,6 +233,11 @@ function validateConfig(candidate){
         }
       }
     });
+    (page.values||[]).forEach((value,faderIndex)=>{
+      if(!Number.isFinite(value)||value<0||value>127){
+        issues.push({type:"value",page:pageIndex,fader:faderIndex,message:`Page ${pageIndex+1} · Fader ${faderIndex+1}: fader value must be 0-127.`});
+      }
+    });
     page.min.forEach((minValue,faderIndex)=>{
       const maxValue=page.max[faderIndex];
       if(!Number.isInteger(minValue)||!Number.isInteger(maxValue)||minValue<0||maxValue>127||minValue>maxValue){
@@ -261,7 +274,7 @@ function updateValidationHighlights(){
     resolutionHint.textContent="";
     resolutionHint.classList.remove("invalid-text");
   }
-  validationIssues.filter(issue=>(issue.type==="cc"||issue.type==="duplicate"||issue.type==="range")&&issue.page===currentPage).forEach(issue=>{
+  validationIssues.filter(issue=>(issue.type==="cc"||issue.type==="duplicate"||issue.type==="range"||issue.type==="value")&&issue.page===currentPage).forEach(issue=>{
     const card=$(`card${issue.fader}`);
     const hint=$(`hint${issue.fader}`);
     if(card)card.classList.add("invalid");
@@ -368,7 +381,13 @@ function updateUiFromConfig(){
     const minInput=$(`min${i}`), maxInput=$(`max${i}`), labelInput=$(`label${i}`);
     if(minInput)minInput.value=config.pages[currentPage].min[i];
     if(maxInput)maxInput.value=config.pages[currentPage].max[i];
-    if(labelInput)labelInput.value=config.pages[currentPage].labels[i]||"";
+    if(labelInput){
+      labelInput.value=config.pages[currentPage].labels[i]||"";
+      labelInput.placeholder="-";
+    }
+    const visual=document.querySelector(`#card${i} .fader-visual`);
+    const v=Number(config.pages[currentPage].values?.[i]??63);
+    if(visual)visual.style.setProperty("--fader-value",`${100-(Math.max(0,Math.min(127,v))/127*100)}%`);
   }
   updateDeviceLabels();
   updateValidationHighlights();
@@ -800,7 +819,8 @@ function init(){
   });
 
   document.querySelectorAll(".preset").forEach(button=>{
-    button.onclick=()=>applyPresetPages(presets[button.dataset.preset].pages,"Preset applied");
+    const key=button.dataset.preset;
+    if(presets[key]) button.onclick=()=>applyPresetPages(presets[key].pages,"Preset applied");
   });
 
   $("presetInput").addEventListener("click",event=>{event.target.value="";});
