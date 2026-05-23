@@ -5,11 +5,11 @@ const $=(id)=>document.getElementById(id);
 function makePage(cc, labels=["","","",""], values=[63,63,63,63]){return {cc,min:[0,0,0,0],max:[127,127,127,127],labels,values};}
 const presets={
   default:{name:"Default",pages:[makePage([11,1,21,7],["Expr","Mod","Ctrl21","Vol"]),makePage([22,23,24,25]),makePage([26,27,28,29]),makePage([30,31,0,1])]},
-  liveMixer:{name:"Live-style Mixer",pages:[makePage([7,10,91,93],["Volume","Pan","Send A","Send B"]),makePage([14,15,16,17],["Ch5","Ch6","Ch7","Ch8"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
-  liveMacros:{name:"Live-style Macros",pages:[makePage([14,15,16,17],["Macro 1","Macro 2","Macro 3","Macro 4"]),makePage([18,19,20,21],["Macro 5","Macro 6","Macro 7","Macro 8"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
+  liveMixer:{name:"Live Mixer",pages:[makePage([7,10,91,93],["Volume","Pan","Send A","Send B"]),makePage([14,15,16,17],["Ch5","Ch6","Ch7","Ch8"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
+  liveMacros:{name:"Live Macros",pages:[makePage([14,15,16,17],["Macro 1","Macro 2","Macro 3","Macro 4"]),makePage([18,19,20,21],["Macro 5","Macro 6","Macro 7","Macro 8"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
   smartControls:{name:"Smart Controls",pages:[makePage([20,21,22,23],["Smart 1","Smart 2","Smart 3","Smart 4"]),makePage([24,25,26,27]),makePage([28,29,30,31]),makePage([32,33,34,35])]},
   quickControls:{name:"Quick Controls",pages:[makePage([16,17,18,19],["Quick 1","Quick 2","Quick 3","Quick 4"]),makePage([20,21,22,23]),makePage([24,25,26,27]),makePage([28,29,30,31])]},
-  samplerExpression:{name:"Sampler Expression",pages:[makePage([11,1,2,21],["Expr","Dyn","Breath","Vibrato"]),makePage([7,10,64,91],["Volume","Pan","Sustain","Reverb"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
+  samplerExpression:{name:"Expression",pages:[makePage([11,1,2,21],["Expr","Dyn","Breath","Vibrato"]),makePage([7,10,64,91],["Volume","Pan","Sustain","Reverb"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
   synth:{name:"Synth Control",pages:[makePage([74,71,73,72],["Cutoff","Reso","Attack","Release"]),makePage([1,11,5,65],["Mod","Expr","Porta","Sustain"]),makePage([20,21,22,23]),makePage([24,25,26,27])]},
   orchestral:{name:"Orchestral",pages:[makePage([11,1,2,21],["Expr","Dyn","Breath","Vibrato"]),makePage([7,10,91,93],["Volume","Pan","Room","Reverb"]),makePage([22,23,24,25]),makePage([26,27,28,29])]},
   djFx:{name:"DJ FX",pages:[makePage([74,91,92,93],["Filter","Reverb","Tremolo","Chorus"]),makePage([20,21,22,23],["FX 1","FX 2","FX 3","FX 4"]),makePage([24,25,26,27]),makePage([28,29,30,31])]}
