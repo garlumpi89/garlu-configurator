@@ -1,5 +1,5 @@
 
-let port=null,demoMode=false,currentPage=0,validationIssues=[],suppressTopValidation=false,isConnected=false,serialReaderActive=false;
+let port=null,demoMode=false,currentPage=0,validationIssues=[],suppressTopValidation=false,isConnected=false,serialReaderActive=false,syncTimer=null;
 const $=(id)=>document.getElementById(id);
 
 function makePage(cc, labels=["","","",""], values=[63,63,63,63]){return {cc,min:[0,0,0,0],max:[127,127,127,127],labels,values};}
@@ -758,24 +758,18 @@ function init(){
   if(connect)connect.onclick=toggleConnection;
 
   $("saveBtn").onclick=async()=>{
+    if(isSyncedMode())return;
     if(!isConnected||$("connectBtn").classList.contains("disconnected")){
       showConnectionWarning("Connect to GARLU before updating the device.");
       toast("Connect to GARLU first");
       return;
     }
-    const payload=configForDevice();
-    if(!payload){
-      toast("Fix configuration issues first");
-      return;
-    }
-    if(!port){
-      showConnectionWarning("Connect to GARLU before updating the device.");
-      return;
-    }
-    await writeLine("SET_CONFIG "+JSON.stringify(payload));
-    setOutputText(JSON.stringify(payload,null,2));
-    toast("GARLU update sent");
+    const ok=await sendConfigToDevice(true);
+    if(!ok)toast("Fix configuration issues first");
   };
+
+  const synced=$("syncedMode");
+  if(synced) synced.addEventListener("change",()=>{updateSaveButtonState(); if(isSyncedMode())scheduleSyncedUpdate();});
 
   document.querySelectorAll(".page").forEach(button=>{
     button.onclick=()=>{
@@ -799,23 +793,29 @@ function init(){
     };
   });
 
-  ["screenLayout","resolutionMode","auxiliaryBanner","oledBrightness","ringBrightness","cc0","cc1","cc2","cc3"].forEach(id=>{
+  ["screenLayout","resolutionMode","auxiliaryBanner","oledBrightness","ringBrightness",
+   "cc0","cc1","cc2","cc3","min0","min1","min2","min3","max0","max1","max2","max3","label0","label1","label2","label3"].forEach(id=>{
     const el=$(id);
     if(!el)return;
-    el.addEventListener("change",()=>{
+    const handler=()=>{
       updateConfigFromUi();
       updateUiFromConfig();
-    });
+      scheduleSyncedUpdate();
+    };
+    el.addEventListener("change",handler);
+    if(el.classList.contains("label-input"))el.addEventListener("input",handler);
   });
 
   $("oledBrightness").addEventListener("input",()=>{
     config.oledBrightness=normalizeOled($("oledBrightness").value);
     updateOledSlider();
+    scheduleSyncedUpdate();
   });
 
   $("ringBrightness").addEventListener("input",()=>{
     config.ringBrightness=normalizeRing($("ringBrightness").value);
     updateRingSlider();
+    scheduleSyncedUpdate();
   });
 
   document.querySelectorAll(".preset").forEach(button=>{
@@ -900,6 +900,7 @@ function init(){
   initCustomSelects();
   renderLocalPresets();
   updateUiFromConfig();
+  updateSaveButtonState();
   setDisconnected(false,true);
 }
 
